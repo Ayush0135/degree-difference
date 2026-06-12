@@ -47,7 +47,7 @@ export default function CollegeChatbot({ college }: CollegeChatbotProps) {
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       
-      const response = await fetch('http://localhost:3001/api/chat-college', {
+      const response = await fetch('/api/chat-college', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

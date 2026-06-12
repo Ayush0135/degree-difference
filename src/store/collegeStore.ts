@@ -68,7 +68,7 @@ export const useCollegeStore = create<CollegeState>()(
         set({ isLoading: true, error: null });
         
         try {
-          const response = await fetch('http://localhost:3001/api/add-college', {
+          const response = await fetch('/api/add-college', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(collegeData)
@@ -105,7 +105,7 @@ export const useCollegeStore = create<CollegeState>()(
           
           const fullUpdatedCollege = { ...currentCollege, ...updates };
 
-          const response = await fetch(`http://localhost:3001/api/update-college/${id}`, {
+          const response = await fetch(`/api/update-college/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(fullUpdatedCollege)

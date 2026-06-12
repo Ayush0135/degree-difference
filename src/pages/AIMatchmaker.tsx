@@ -17,18 +17,16 @@ export default function AIMatchmaker() {
     setColleges([]);
 
     const fd = new FormData(e.currentTarget);
-    const payload = {
-      city: fd.get('city') as string,
-      program: fd.get('program') as string,
-      budget: fd.get('budget') as string,
-      custom: fd.get('custom') as string,
-    };
+    const city = fd.get('city') as string;
+    const program = fd.get('program') as string;
+    const budget = fd.get('budget') as string;
+    const customPreferences = fd.get('custom') as string;
 
     try {
-      const res = await fetch('http://localhost:3001/api/ai-match', {
+      const res = await fetch('/api/ai-match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ city, program, budget, custom: customPreferences })
       });
       const data = await res.json();
       

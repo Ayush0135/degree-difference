@@ -27,7 +27,7 @@ export default function Colleges() {
     setIsSearching(true);
     const timeoutId = setTimeout(async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/search', {
+        const res = await fetch('/api/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: filters.search })

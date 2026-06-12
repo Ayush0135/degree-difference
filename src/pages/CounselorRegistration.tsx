@@ -61,7 +61,12 @@ export default function CounselorRegistration() {
       window.scrollTo({ top: document.getElementById('registration-form')?.offsetTop! - 100, behavior: 'smooth' });
     } else {
       setIsSubmitting(true);
-      const success = await submitCounselorApplication(formData);
+      const res = await fetch('/api/register-counselor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData })
+      });
+      const success = await res.json();
       setIsSubmitting(false);
       
       if (success) {

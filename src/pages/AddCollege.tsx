@@ -63,7 +63,7 @@ export default function AddCollege() {
 
       if (!isEditMode) {
         // Call AI Backend only for new colleges
-        const aiResponse = await fetch('http://localhost:3001/api/enhance-college', {
+        const aiResponse = await fetch('/api/enhance-college', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
