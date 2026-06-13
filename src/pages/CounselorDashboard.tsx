@@ -45,7 +45,7 @@ export default function CounselorDashboard() {
   const [badges, setBadges] = useState<any[]>([]);
 
   // Generate the registration URL for this counselor
-  const registrationUrl = `${window.location.origin}/register/${user?.id || 'demo'}?cName=${encodeURIComponent(counselorName)}`;
+  const registrationUrl = `${window.location.origin}/#/register/${user?.id || 'demo'}?cName=${encodeURIComponent(counselorName)}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(registrationUrl)}`;
 
   useEffect(() => {
