@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
-import { School, Users, FileText, MessageSquare, Database, RefreshCw } from 'lucide-react';
+import { Plus, School, Users, FileText, MessageSquare, Edit, Trash2, X, Check, Database, UserPlus, BookOpen, Book, ArrowRight, Lock, RefreshCw, Megaphone, Save } from 'lucide-react';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAdminStore } from '../store/adminStore';
 import { supabase, isSupabaseConfigured, fetchPlatformSettings, updatePlatformSettings } from '../lib/supabase';
