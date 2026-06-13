@@ -4,10 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DegreeDifference - Find Your Dream College</title>
-    <script type="module" crossorigin src="./assets/index-mCy4XihB.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-D1LrT4w6.css">
+    <script type="module" crossorigin src="./assets/index-CBobgqrk.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bty3CLnZ.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(event) {
+        document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;z-index:9999;position:relative;"><h2>Runtime Error</h2><p>' + event.message + '</p><pre>' + event.error?.stack + '</pre></div>';
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        document.body.innerHTML = '<div style="color:red;padding:20px;font-family:monospace;z-index:9999;position:relative;"><h2>Unhandled Promise Rejection</h2><p>' + event.reason + '</p></div>';
+      });
+    </script>
   </body>
 </html>

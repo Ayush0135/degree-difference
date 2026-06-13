@@ -71,7 +71,6 @@ export default function Login() {
             name: dbUser.name,
             email: dbUser.email,
             role: dbUser.role,
-            password: dbUser.password,
             assignedStudents: [],
             specialization: []
           };
@@ -85,7 +84,7 @@ export default function Login() {
       }
 
       if (counselor) {
-        login(counselor);
+        login(counselor as unknown as import('../types').User);
         navigate('/counselor');
       } else {
         setError('Invalid counselor credentials or unauthorized account.');

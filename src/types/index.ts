@@ -50,7 +50,7 @@ export interface Application {
   highSchoolMarks?: string;
   status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'counseling';
   appliedDate: string;
-  documents: string[];
+  documents: (string | { id: string; name: string; type: string; url: string; uploadedAt: string })[];
   counselorId?: string;
   assignedCounselorName?: string;
   counselorNotes?: string;

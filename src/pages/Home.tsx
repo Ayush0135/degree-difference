@@ -58,8 +58,9 @@ export default function Home() {
       studentName: formData.get('name') as string,
       subject: 'Free Counselling Request',
       message: `Phone: ${formData.get('phone')}\nEmail: ${formData.get('email')}\nQuery: ${formData.get('query')}`,
+      studentEmail: formData.get('email') as string,
       status: 'open',
-      date: new Date().toISOString().split('T')[0]
+      createdDate: new Date().toISOString().split('T')[0]
     });
     
     setShowCounselSuccess(true);

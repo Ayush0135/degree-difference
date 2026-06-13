@@ -240,10 +240,11 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       id: `query-${Date.now()}`,
       studentId: queryData.studentId || `student-${Date.now()}`,
       studentName: queryData.studentName || 'Counselor Query',
+      studentEmail: queryData.studentEmail || 'no-reply@example.com',
       subject: queryData.subject || 'General',
       message: queryData.message || '',
-      status: 'pending',
-      date: new Date().toISOString()
+      status: 'open',
+      createdDate: new Date().toISOString()
     };
     set(state => ({ queries: [newQuery, ...state.queries] }));
   },

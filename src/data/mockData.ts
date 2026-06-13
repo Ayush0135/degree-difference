@@ -151,7 +151,7 @@ export const mockColleges: College[] = [
     location: 'Sector 36, NRI Road, Jagatpura, Jaipur',
     city: 'Jaipur',
     state: 'Rajasthan',
-    type: 'Private',
+    type: 'Business',
     affiliation: 'Autonomous',
     established: 2012,
     rating: 4.6,

@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, FileText, CheckCircle, AlertCircle, Calendar, GraduationCap, Building2, TrendingUp, DollarSign, LogOut, Search, UserCircle, BookOpen, Award, Filter, MapPin, X, Check, Eye, UserPlus, FileUp, MessageSquare, Briefcase, RefreshCw, Upload, Phone, Mail, FileBadge, CheckSquare, ListTodo, MoreVertical, Send, Loader2, Plus, Clock, Camera, Save, ArrowRight } from 'lucide-react';
+import { Users, CheckCircle, Clock, TrendingUp, Search, UserCircle, Filter, X, Eye, MessageSquare, Loader2, Plus } from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAuthStore } from '../store/authStore';
-import { useEffect, useRef } from 'react';
-import { uploadAvatar, updateUserProfile, fetchPlatformSettings, fetchCounselorTasks, addCounselorTask, updateCounselorTask, deleteCounselorTask, uploadDocumentToDB } from '../lib/supabase';
+import { uploadAvatar, updateUserProfile, fetchPlatformSettings, fetchCounselorTasks, addCounselorTask, updateCounselorTask, deleteCounselorTask } from '../lib/supabase';
 import ApplicationChat from '../components/ApplicationChat';
 
 const statCfg = [

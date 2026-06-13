@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, School, Users, FileText, MessageSquare, Edit, Trash2, X, Check, Database, UserPlus, BookOpen, Book, ArrowRight, Lock, RefreshCw, Megaphone, Save } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { School, Users, FileText, MessageSquare, Database, RefreshCw } from 'lucide-react';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAdminStore } from '../store/adminStore';
-import { mockQueries, mockCounselors } from '../data/mockData';
 import { supabase, isSupabaseConfigured, fetchPlatformSettings, updatePlatformSettings } from '../lib/supabase';
 import ApplicationChat from '../components/ApplicationChat';
 
