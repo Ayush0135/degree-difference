@@ -27,10 +27,8 @@ export default function AdminDashboard() {
   const [incentiveForm, setIncentiveForm] = useState<string>('');
   
   useEffect(() => {
-    if (!isInitialized) {
-      initializeData();
-    }
-  }, [isInitialized, initializeData]);
+    initializeData();
+  }, [initializeData]);
 
   const [showAdd, setShowAdd] = useState(false);
   const [tab, setTab] = useState<'colleges' | 'applications' | 'queries' | 'manual_reg' | 'rule_book' | 'manage_counselors' | 'counselor_applications' | 'leaderboard'>('colleges');

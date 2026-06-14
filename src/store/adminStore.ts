@@ -50,7 +50,9 @@ export const useAdminStore = create<AdminState>()(
         set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, isInitialized: true, isLoading: false });
       } else {
         const finalCounselors = get().counselors.length > 0 ? get().counselors : (mockCounselors as Counselor[]);
-        set({ applications: mockApplications, queries: mockQueries, counselors: finalCounselors, counselorApplications: [], isInitialized: true, isLoading: false });
+        const finalApps = get().applications.length > 0 ? get().applications : mockApplications;
+        const finalQueries = get().queries.length > 0 ? get().queries : mockQueries;
+        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors, counselorApplications: get().counselorApplications || [], isInitialized: true, isLoading: false });
       }
     } catch (error) {
       console.error("Failed to initialize admin data", error);
@@ -269,4 +271,9 @@ export const useAdminStore = create<AdminState>()(
   }
 }), {
   name: 'admin-storage',
+  partialize: (state) => ({ 
+    ...state, 
+    isInitialized: false, // Always false on load so it refetches
+    isLoading: false
+  })
 }));

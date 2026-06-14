@@ -138,8 +138,8 @@ export default function CounselorDashboard() {
   const { colleges } = useCollegeStore();
   
   useEffect(() => {
-    if (!isInitialized) initializeData();
-  }, [isInitialized, initializeData]);
+    initializeData();
+  }, [initializeData]);
 
   // Filter only apps assigned to this counselor
   const apps = applications.filter(a => a.counselorId === counselorId);
