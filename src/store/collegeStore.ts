@@ -35,27 +35,27 @@ export const useCollegeStore = create<CollegeState>()(
       setColleges: (colleges) => set({ colleges }),
 
       initializeColleges: async () => {
-        // Don't re-initialize if already done
-        if (get().isInitialized && get().colleges.length > 0) return;
-        
         set({ isLoading: true, error: null });
         
         try {
           if (isSupabaseConfigured()) {
-            // Fetch from Supabase
-            const colleges = await fetchCollegesFromDB();
+            const dbColleges = await fetchCollegesFromDB();
             
-            if (colleges.length > 0) {
-              set({ colleges, isLoading: false, isInitialized: true });
+            if (dbColleges.length > 0) {
+              set({ colleges: dbColleges, isLoading: false, isInitialized: true });
             } else {
-              // If no colleges in DB, seed with mock data
-              console.log('No colleges in database, using mock data');
-              set({ colleges: mockColleges, isLoading: false, isInitialized: true });
+              // DB is empty, sync local colleges or mock data to DB
+              const localColleges = get().colleges.length > 0 ? get().colleges : mockColleges;
+              console.log('No colleges in database, syncing local data to Supabase...');
+              for (const c of localColleges) {
+                await addCollegeToDB(c);
+              }
+              const freshColleges = await fetchCollegesFromDB();
+              set({ colleges: freshColleges.length > 0 ? freshColleges : localColleges, isLoading: false, isInitialized: true });
             }
           } else {
-            // Supabase not configured, use mock data
-            console.log('Supabase not configured, using mock data');
-            set({ colleges: mockColleges, isLoading: false, isInitialized: true });
+            const current = get().colleges;
+            set({ colleges: current.length > 0 ? current : mockColleges, isLoading: false, isInitialized: true });
           }
         } catch (error) {
           console.error('Error initializing colleges:', error);

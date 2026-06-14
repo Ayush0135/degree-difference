@@ -56,8 +56,31 @@ export const useAdminStore = create<AdminState>()(
           fetchSubadminsFromDB(),
           fetchPlatformSettings('counselor_marquee_offer')
         ]);
-        const finalCounselors = dbCounselors.length > 0 ? dbCounselors : (mockCounselors as Counselor[]);
-        set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, marqueeOffer: marquee || get().marqueeOffer, isInitialized: true, isLoading: false });
+        
+        let finalApps = apps;
+        let finalQueries = qs;
+        let finalCounselors = dbCounselors;
+        
+        // Sync local data to DB if DB is empty
+        const localApps = get().applications;
+        if (apps.length === 0 && localApps.length > 0) {
+          console.log('Syncing local applications to DB...');
+          for (const app of localApps) await addApplicationToDB(app);
+          finalApps = await fetchApplicationsFromDB();
+        }
+        
+        const localCounselors = get().counselors;
+        if (dbCounselors.length === 0 && localCounselors.length > 0) {
+          console.log('Syncing local counselors to DB...');
+          const { createUser } = await import('../lib/supabase');
+          for (const c of localCounselors) {
+            await createUser({ name: c.name, email: c.email, role: 'counselor', password: c.password });
+          }
+          finalCounselors = await fetchCounselorsFromDB();
+        }
+
+        finalCounselors = finalCounselors.length > 0 ? finalCounselors : (mockCounselors as Counselor[]);
+        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, marqueeOffer: marquee || get().marqueeOffer, isInitialized: true, isLoading: false });
       } else {
         const finalCounselors = get().counselors.length > 0 ? get().counselors : (mockCounselors as Counselor[]);
         const finalApps = get().applications.length > 0 ? get().applications : mockApplications;
