@@ -165,7 +165,16 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #134e4a 100%)' }}>
+    <div 
+      className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12 relative" 
+      style={{ 
+        background: role === 'student' 
+          ? `linear-gradient(rgba(15, 23, 42, 0.7), rgba(19, 78, 74, 0.85)), url('/indian_students_bg.png')` 
+          : 'linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #134e4a 100%)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-4xl w-full grid md:grid-cols-2">
 
         {/* Left branding panel */}
