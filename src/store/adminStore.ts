@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Application, Query, CounselorApplication, Counselor } from '../types';
 import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge } from '../lib/supabase';
 import { mockApplications, mockQueries, mockCounselors } from '../data/mockData';
@@ -24,13 +25,15 @@ interface AdminState {
   approveCounselorApp: (id: string) => Promise<boolean>;
 }
 
-export const useAdminStore = create<AdminState>((set, get) => ({
-  applications: [],
-  queries: [],
-  counselors: [],
-  counselorApplications: [],
-  isLoading: false,
-  isInitialized: false,
+export const useAdminStore = create<AdminState>()(
+  persist(
+    (set, get) => ({
+      applications: [],
+      queries: [],
+      counselors: [],
+      counselorApplications: [],
+      isLoading: false,
+      isInitialized: false,
 
   initializeData: async () => {
     set({ isLoading: true });
@@ -249,7 +252,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     set(state => ({ queries: [newQuery, ...state.queries] }));
   },
 
-  approveCounselorApp: async (id: string) => {
+  approveCounselorApp: async (id) => {
     if (isSupabaseConfigured()) {
       const success = await approveCounselorApplicationInDB(id);
       if (success) {
@@ -264,4 +267,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
     return false;
   }
+}), {
+  name: 'admin-storage',
 }));

@@ -4,7 +4,7 @@ import { Users, FileText, CheckCircle, AlertCircle, Calendar, GraduationCap, Bui
 import { useAdminStore } from '../store/adminStore';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAuthStore } from '../store/authStore';
-import { uploadAvatar, updateUserProfile, fetchPlatformSettings, fetchCounselorTasks, addCounselorTask, updateCounselorTask, deleteCounselorTask } from '../lib/supabase';
+import { uploadAvatar, updateUserProfile, fetchPlatformSettings, fetchCounselorTasks, addCounselorTask, updateCounselorTask, deleteCounselorTask, uploadDocumentToDB } from '../lib/supabase';
 import ApplicationChat from '../components/ApplicationChat';
 
 const statCfg = [

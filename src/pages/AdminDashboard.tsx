@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, School, Users, FileText, MessageSquare, Edit, Trash2, X, Check, Database, UserPlus, BookOpen, Book, ArrowRight, Lock, RefreshCw, Megaphone, Save } from 'lucide-react';
 import { useCollegeStore } from '../store/collegeStore';
