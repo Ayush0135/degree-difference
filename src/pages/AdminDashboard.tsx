@@ -24,7 +24,7 @@ function Badge({ status }: { status: string }) {
 export default function AdminDashboard() {
   const { colleges, addCollege, deleteCollege } = useCollegeStore();
   const { user } = useAuthStore();
-  const { applications, queries, initializeData, updateApplicationStatus, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized, subadmins, addSubadmin, removeSubadmin } = useAdminStore();
+  const { applications, queries, initializeData, updateApplicationStatus, advanceApplicationStep, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized, subadmins, addSubadmin, removeSubadmin, marqueeOffer: storeMarquee, updateMarqueeOffer } = useAdminStore();
   const dbConnected = isSupabaseConfigured();
   const [incentiveForm, setIncentiveForm] = useState<string>('');
   
@@ -39,18 +39,16 @@ export default function AdminDashboard() {
   const [showCounselorModal, setShowCounselorModal] = useState(false);
   const [chatAppId, setChatAppId] = useState<{id: string, name: string} | null>(null);
 
-  const [marqueeOffer, setMarqueeOffer] = useState('🎉 Special Bonus: Complete 5 admissions this month and get a ₹10,000 bonus!');
-  const [isSavingMarquee, setIsSavingMarquee] = useState(false);
+  const [marqueeOffer, setMarqueeOffer] = useState(storeMarquee);
 
   useEffect(() => {
-    fetchPlatformSettings('counselor_marquee_offer').then(val => {
-      if (val) setMarqueeOffer(val);
-    });
-  }, []);
+    setMarqueeOffer(storeMarquee);
+  }, [storeMarquee]);
+  const [isSavingMarquee, setIsSavingMarquee] = useState(false);
 
   const handleSaveMarquee = async () => {
     setIsSavingMarquee(true);
-    await updatePlatformSettings('counselor_marquee_offer', marqueeOffer);
+    await updateMarqueeOffer(marqueeOffer);
     setIsSavingMarquee(false);
     alert('Marquee offer updated successfully!');
   };
@@ -314,7 +312,10 @@ export default function AdminDashboard() {
 
                     {a.status === 'pending' || a.status === 'under_review' ? (
                       <div className="flex gap-2 border-t border-slate-100 pt-3">
-                        <button onClick={() => updateApplicationStatus(a.id, 'approved')} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700"><Check className="h-3 w-3" /> Process Admission</button>
+                        {a.status === 'pending' && (
+                          <button onClick={() => { updateApplicationStatus(a.id, 'under_review'); advanceApplicationStep(a.id); }} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700"><Check className="h-3 w-3" /> Verify & Review</button>
+                        )}
+                        <button onClick={() => { updateApplicationStatus(a.id, 'approved'); advanceApplicationStep(a.id); advanceApplicationStep(a.id); advanceApplicationStep(a.id); }} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700"><Check className="h-3 w-3" /> Process Admission</button>
                         <button onClick={() => updateApplicationStatus(a.id, 'rejected')} className="flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600"><X className="h-3 w-3" /> Reject</button>
                         <button onClick={() => setChatAppId({id: a.id, name: a.studentName})} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-medium hover:bg-indigo-100 ml-auto"><MessageSquare className="h-3 w-3" /> Discuss</button>
                       </div>

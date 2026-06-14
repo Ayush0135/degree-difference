@@ -27,7 +27,6 @@ export default function CounselorDashboard() {
   const [showDocsModal, setShowDocsModal] = useState(false);
   const [view, setView] = useState<'dashboard' | 'earnings' | 'leaderboard' | 'profile'>('dashboard');
   const [isUploading, setIsUploading] = useState(false);
-  const [marqueeOffer, setMarqueeOffer] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { user, updateUser } = useAuthStore();
@@ -49,9 +48,6 @@ export default function CounselorDashboard() {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(registrationUrl)}`;
 
   useEffect(() => {
-    fetchPlatformSettings('counselor_marquee_offer').then(val => {
-      if (val) setMarqueeOffer(val);
-    });
     if (user?.id) {
       import('../lib/supabase').then(s => {
         s.fetchCounselorTasks(user.id).then(setTasks);
@@ -134,7 +130,7 @@ export default function CounselorDashboard() {
 
   const counselorId = user?.id || 'counselor1';
   
-  const { applications, updateScholarship, advanceApplicationStep, initializeData, manuallyRegisterStudent, addQuery, isInitialized, counselors } = useAdminStore();
+  const { applications, updateScholarship, advanceApplicationStep, initializeData, manuallyRegisterStudent, addQuery, isInitialized, counselors, marqueeOffer } = useAdminStore();
   const { colleges } = useCollegeStore();
   
   useEffect(() => {

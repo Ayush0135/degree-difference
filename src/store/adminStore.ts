@@ -12,6 +12,7 @@ interface AdminState {
   counselorApplications: CounselorApplication[];
   isLoading: boolean;
   isInitialized: boolean;
+  marqueeOffer: string;
   
   initializeData: () => Promise<void>;
   updateApplicationStatus: (id: string, status: Application['status']) => Promise<void>;
@@ -26,6 +27,7 @@ interface AdminState {
   approveCounselorApp: (id: string) => Promise<boolean>;
   addSubadmin: (email: string) => Promise<void>;
   removeSubadmin: (id: string) => Promise<void>;
+  updateMarqueeOffer: (offer: string) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -38,21 +40,23 @@ export const useAdminStore = create<AdminState>()(
       counselorApplications: [],
       isLoading: false,
       isInitialized: false,
+      marqueeOffer: '🎉 Special Bonus: Complete 5 admissions this month and get a ₹10,000 bonus!',
 
   initializeData: async () => {
     set({ isLoading: true });
     
     try {
       if (isSupabaseConfigured()) {
-        const [apps, qs, dbCounselors, cApps, dbSubadmins] = await Promise.all([
+        const [apps, qs, dbCounselors, cApps, dbSubadmins, marquee] = await Promise.all([
           fetchApplicationsFromDB(), 
           fetchQueriesFromDB(),
           fetchCounselorsFromDB(),
           fetchCounselorApplicationsFromDB(),
-          fetchSubadminsFromDB()
+          fetchSubadminsFromDB(),
+          fetchPlatformSettings('counselor_marquee_offer')
         ]);
         const finalCounselors = dbCounselors.length > 0 ? dbCounselors : (mockCounselors as Counselor[]);
-        set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, isInitialized: true, isLoading: false });
+        set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, marqueeOffer: marquee || get().marqueeOffer, isInitialized: true, isLoading: false });
       } else {
         const finalCounselors = get().counselors.length > 0 ? get().counselors : (mockCounselors as Counselor[]);
         const finalApps = get().applications.length > 0 ? get().applications : mockApplications;
@@ -294,6 +298,14 @@ export const useAdminStore = create<AdminState>()(
       await removeSubadminFromDB(id);
     }
     set(state => ({ subadmins: state.subadmins.filter(s => s.id !== id) }));
+  },
+
+  updateMarqueeOffer: async (offer: string) => {
+    if (isSupabaseConfigured()) {
+      const { updatePlatformSettings } = await import('../lib/supabase');
+      await updatePlatformSettings('counselor_marquee_offer', offer);
+    }
+    set({ marqueeOffer: offer });
   }
 }), {
   name: 'admin-storage',
