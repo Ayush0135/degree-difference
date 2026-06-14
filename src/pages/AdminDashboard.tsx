@@ -58,29 +58,41 @@ export default function AdminDashboard() {
 
   const vals = [colleges.length, applications.length, queries.length, '500+'];
 
-  const handleManualReg = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleManualReg = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    manuallyRegisterStudent({
-      studentName: formData.get('name') as string,
-      studentEmail: formData.get('email') as string,
-      studentPhone: formData.get('phone') as string,
-      course: formData.get('course') as string,
-    });
-    setTab('applications');
-    e.currentTarget.reset();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    try {
+      await manuallyRegisterStudent({
+        studentName: formData.get('name') as string,
+        studentEmail: formData.get('email') as string,
+        studentPhone: formData.get('phone') as string,
+        course: formData.get('course') as string,
+      });
+      setTab('applications');
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to register student');
+    }
   };
 
-  const handleAddCounselor = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddCounselor = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    addCounselor({
-      name: formData.get('name') as string,
-      email: (formData.get('email') as string).trim().toLowerCase(),
-      password: formData.get('password') as string,
-    });
-    setTab('manage_counselors');
-    e.currentTarget.reset();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    try {
+      await addCounselor({
+        name: formData.get('name') as string,
+        email: (formData.get('email') as string).trim().toLowerCase(),
+        password: formData.get('password') as string,
+      });
+      setTab('manage_counselors');
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to add counselor');
+    }
   };
 
   const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -562,11 +574,12 @@ export default function AdminDashboard() {
                 <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2"><Lock className="h-5 w-5 text-indigo-600"/> Manage Subadmins</h2>
                 <div className="grid lg:grid-cols-2 gap-8">
                   {/* Create Subadmin Form */}
-                  <form onSubmit={(e) => {
+                  <form onSubmit={async (e) => {
                     e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    addSubadmin(formData.get('email') as string);
-                    e.currentTarget.reset();
+                    const form = e.currentTarget;
+                    const formData = new FormData(form);
+                    await addSubadmin(formData.get('email') as string);
+                    form.reset();
                   }} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                     <h3 className="font-bold text-slate-900 mb-4">Grant Subadmin Access</h3>
                     <p className="text-sm text-slate-500 mb-4">Add an email address to grant subadmin privileges. They will receive an OTP when logging in.</p>

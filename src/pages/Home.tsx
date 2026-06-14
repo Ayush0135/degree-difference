@@ -51,7 +51,8 @@ export default function Home() {
 
   const handleCounsellingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     
     await addQuery({
       studentId: user?.id || 'guest',
@@ -64,7 +65,7 @@ export default function Home() {
     });
     
     setShowCounselSuccess(true);
-    e.currentTarget.reset();
+    form.reset();
     setTimeout(() => setShowCounselSuccess(false), 5000);
   };
 
