@@ -434,31 +434,35 @@ export async function fetchCounselorsFromDB(): Promise<any[]> {
 
 export async function fetchSubadminsFromDB(): Promise<any[]> {
   if (!supabase) return [];
-  const { data: users, error } = await supabase.from('users').select('*').eq('role', 'subadmin');
-  if (error || !users) return [];
-  return users;
+  const val = await fetchPlatformSettings('subadmins_data');
+  if (!val) return [];
+  try {
+    return JSON.parse(val);
+  } catch(e) {
+    return [];
+  }
 }
 
 export async function addSubadminToDB(email: string): Promise<any | null> {
   if (!supabase) return null;
-  const payload = {
+  const current = await fetchSubadminsFromDB();
+  const newUser = {
     id: `subadmin-${Date.now()}`,
     name: email.split('@')[0],
     email: email,
     role: 'subadmin'
   };
-  const { data, error } = await supabase.from('users').insert([payload]).select().single();
-  if (error) {
-    console.error('Error adding subadmin:', error);
-    return null;
-  }
-  return data;
+  current.push(newUser);
+  const success = await updatePlatformSettings('subadmins_data', JSON.stringify(current));
+  if (success) return newUser;
+  return null;
 }
 
 export async function removeSubadminFromDB(id: string): Promise<boolean> {
   if (!supabase) return true;
-  const { error } = await supabase.from('users').delete().eq('id', id).eq('role', 'subadmin');
-  return !error;
+  const current = await fetchSubadminsFromDB();
+  const next = current.filter((u: any) => u.id !== id);
+  return await updatePlatformSettings('subadmins_data', JSON.stringify(next));
 }
 
 export async function updateCounselorFakeAdmissionsInDB(id: string, count: number): Promise<boolean> {
