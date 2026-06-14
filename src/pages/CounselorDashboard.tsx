@@ -130,12 +130,14 @@ export default function CounselorDashboard() {
 
   const counselorId = user?.id || 'counselor1';
   
-  const { applications, updateScholarship, advanceApplicationStep, initializeData, manuallyRegisterStudent, addQuery, isInitialized, counselors, marqueeOffer } = useAdminStore();
+  const { applications, updateScholarship, advanceApplicationStep, initializeData, setupRealtime, manuallyRegisterStudent, addQuery, isInitialized, counselors, marqueeOffer } = useAdminStore();
   const { colleges } = useCollegeStore();
   
   useEffect(() => {
-    initializeData();
-  }, [initializeData]);
+    initializeData().then(() => {
+      setupRealtime();
+    });
+  }, [initializeData, setupRealtime]);
 
   // Filter only apps assigned to this counselor
   const apps = applications.filter(a => a.counselorId === counselorId);

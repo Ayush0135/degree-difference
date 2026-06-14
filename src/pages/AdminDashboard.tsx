@@ -22,15 +22,18 @@ function Badge({ status }: { status: string }) {
 }
 
 export default function AdminDashboard() {
-  const { colleges, addCollege, deleteCollege } = useCollegeStore();
   const { user } = useAuthStore();
-  const { applications, queries, initializeData, updateApplicationStatus, advanceApplicationStep, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized, subadmins, addSubadmin, removeSubadmin, marqueeOffer: storeMarquee, updateMarqueeOffer } = useAdminStore();
+  const { applications, queries, initializeData, updateApplicationStatus, advanceApplicationStep, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized, subadmins, addSubadmin, removeSubadmin, marqueeOffer: storeMarquee, updateMarqueeOffer, setupRealtime } = useAdminStore();
+  const { colleges, initializeColleges, addCollege, deleteCollege } = useCollegeStore();
   const dbConnected = isSupabaseConfigured();
   const [incentiveForm, setIncentiveForm] = useState<string>('');
   
   useEffect(() => {
-    initializeData();
-  }, [initializeData]);
+    initializeColleges();
+    initializeData().then(() => {
+      setupRealtime();
+    });
+  }, [initializeColleges, initializeData, setupRealtime]);
 
   const [showAdd, setShowAdd] = useState(false);
   const [tab, setTab] = useState<'colleges' | 'applications' | 'queries' | 'manual_reg' | 'rule_book' | 'manage_counselors' | 'counselor_applications' | 'leaderboard' | 'subadmins'>('colleges');

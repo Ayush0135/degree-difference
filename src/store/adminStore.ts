@@ -28,6 +28,7 @@ interface AdminState {
   addSubadmin: (email: string) => Promise<void>;
   removeSubadmin: (id: string) => Promise<void>;
   updateMarqueeOffer: (offer: string) => Promise<void>;
+  setupRealtime: () => void;
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -67,6 +68,36 @@ export const useAdminStore = create<AdminState>()(
       console.error("Failed to initialize admin data", error);
       set({ isLoading: false });
     }
+  },
+
+  setupRealtime: async () => {
+    if (!isSupabaseConfigured()) return;
+    const { supabase } = await import('../lib/supabase');
+    if (!supabase) return;
+
+    const handleChanges = async () => {
+      console.log('Realtime DB change detected. Syncing...');
+      const [apps, qs, dbCounselors, cApps, dbSubadmins, marquee] = await Promise.all([
+        fetchApplicationsFromDB(), 
+        fetchQueriesFromDB(),
+        fetchCounselorsFromDB(),
+        fetchCounselorApplicationsFromDB(),
+        fetchSubadminsFromDB(),
+        fetchPlatformSettings('counselor_marquee_offer')
+      ]);
+      const finalCounselors = dbCounselors.length > 0 ? dbCounselors : (mockCounselors as Counselor[]);
+      set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, marqueeOffer: marquee || get().marqueeOffer });
+    };
+
+    const channel = supabase.channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        handleChanges
+      )
+      .subscribe((status) => {
+        console.log('Supabase realtime status:', status);
+      });
   },
 
   updateApplicationStatus: async (id, status) => {
