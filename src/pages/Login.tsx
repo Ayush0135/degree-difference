@@ -43,11 +43,13 @@ export default function Login() {
     setIsLoading(true);
     setError('');
     
+    const cleanEmail = email.trim().toLowerCase();
+    
     if (role === 'admin') {
-      if (email !== 'ayush.kashyap7155@gmail.com') {
+      if (cleanEmail !== 'ayush.kashyap7155@gmail.com') {
         try {
-          const dbUser = await getUserByEmail(email);
-          const isSubadminLocal = subadmins?.some(s => s.email === email);
+          const dbUser = await getUserByEmail(cleanEmail);
+          const isSubadminLocal = subadmins?.some(s => s.email === cleanEmail);
           
           if (!isSubadminLocal && (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'subadmin'))) {
             setError('Unauthorized: You are not an authorized admin or subadmin.');
@@ -73,7 +75,7 @@ export default function Login() {
       // Direct email/password login for counselors. No OTP.
       let counselor = null;
       try {
-        const dbUser = await getUserByEmail(email);
+        const dbUser = await getUserByEmail(cleanEmail);
         if (dbUser && dbUser.role === 'counselor' && dbUser.password === password) {
           counselor = {
             id: dbUser.id,
@@ -89,7 +91,7 @@ export default function Login() {
       }
 
       if (!counselor) {
-        counselor = counselors.find(c => c.email === email && c.password === password);
+        counselor = counselors.find(c => c.email === cleanEmail && c.password === password);
       }
 
       if (counselor) {
@@ -130,12 +132,18 @@ export default function Login() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    const cleanEmail = email.trim().toLowerCase();
+
     if (otp === generatedOtp) {
-      setIsLoading(true);
       try {
-        let dbUser = await getUserByEmail(email);
+        let dbUser = await getUserByEmail(cleanEmail);
+        
         if (!dbUser) {
-          dbUser = await createUser({ name: name || email.split('@')[0], email, role: email === 'ayush.kashyap7155@gmail.com' ? 'admin' : role });
+          // Auto-register student if they don't exist
+          dbUser = await createUser({ name: name || cleanEmail.split('@')[0], email: cleanEmail, role: cleanEmail === 'ayush.kashyap7155@gmail.com' ? 'admin' : role });
         }
         
         let user: UserType;

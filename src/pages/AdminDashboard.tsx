@@ -73,9 +73,10 @@ export default function AdminDashboard() {
     const formData = new FormData(e.currentTarget);
     addCounselor({
       name: formData.get('name') as string,
-      email: formData.get('email') as string,
+      email: (formData.get('email') as string).trim().toLowerCase(),
       password: formData.get('password') as string,
     });
+    setTab('manage_counselors');
     e.currentTarget.reset();
   };
 
