@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, School, Users, FileText, MessageSquare, Edit, Trash2, X, Check, Database, UserPlus, BookOpen, Book, ArrowRight, Lock, RefreshCw, Megaphone, Save } from 'lucide-react';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAdminStore } from '../store/adminStore';
+import { useAuthStore } from '../store/authStore';
 import { supabase, isSupabaseConfigured, fetchPlatformSettings, updatePlatformSettings } from '../lib/supabase';
 import ApplicationChat from '../components/ApplicationChat';
 
@@ -22,7 +23,8 @@ function Badge({ status }: { status: string }) {
 
 export default function AdminDashboard() {
   const { colleges, addCollege, deleteCollege } = useCollegeStore();
-  const { applications, queries, initializeData, updateApplicationStatus, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized } = useAdminStore();
+  const { user } = useAuthStore();
+  const { applications, queries, initializeData, updateApplicationStatus, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized, subadmins, addSubadmin, removeSubadmin } = useAdminStore();
   const dbConnected = isSupabaseConfigured();
   const [incentiveForm, setIncentiveForm] = useState<string>('');
   
@@ -31,7 +33,7 @@ export default function AdminDashboard() {
   }, [initializeData]);
 
   const [showAdd, setShowAdd] = useState(false);
-  const [tab, setTab] = useState<'colleges' | 'applications' | 'queries' | 'manual_reg' | 'rule_book' | 'manage_counselors' | 'counselor_applications' | 'leaderboard'>('colleges');
+  const [tab, setTab] = useState<'colleges' | 'applications' | 'queries' | 'manual_reg' | 'rule_book' | 'manage_counselors' | 'counselor_applications' | 'leaderboard' | 'subadmins'>('colleges');
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [showCounselorModal, setShowCounselorModal] = useState(false);
@@ -203,8 +205,8 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="border-b border-slate-100 overflow-x-auto">
             <div className="flex px-4 sm:px-6 min-w-max">
-              {(['colleges', 'applications', 'queries', 'manual_reg', 'rule_book', 'manage_counselors', 'counselor_applications'] as const).map((t) => (
-                <button key={t} onClick={() => setTab(t)} className={`relative py-3.5 px-5 text-sm font-semibold capitalize whitespace-nowrap ${tab === t ? 'text-teal-700' : 'text-slate-400 hover:text-slate-600'}`}>
+              {(['colleges', 'applications', 'queries', 'manual_reg', 'rule_book', 'leaderboard', ...(user?.role === 'admin' ? ['manage_counselors', 'counselor_applications', 'subadmins'] : [])] as const).map((t) => (
+                <button key={t} onClick={() => setTab(t as any)} className={`relative py-3.5 px-5 text-sm font-semibold capitalize whitespace-nowrap ${tab === t ? 'text-teal-700' : 'text-slate-400 hover:text-slate-600'}`}>
                   {t.replace('_', ' ')}
                   {tab === t && <motion.div layoutId="admin-tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600 rounded-full" />}
                 </button>
@@ -549,6 +551,57 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {user?.role === 'admin' && tab === 'subadmins' && (
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2"><Lock className="h-5 w-5 text-indigo-600"/> Manage Subadmins</h2>
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Create Subadmin Form */}
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    addSubadmin(formData.get('email') as string);
+                    e.currentTarget.reset();
+                  }} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <h3 className="font-bold text-slate-900 mb-4">Grant Subadmin Access</h3>
+                    <p className="text-sm text-slate-500 mb-4">Add an email address to grant subadmin privileges. They will receive an OTP when logging in.</p>
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Subadmin Email</label>
+                        <input required type="email" name="email" placeholder="e.g. subadmin@degreedifference.com" className="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-teal-500 bg-slate-50" />
+                      </div>
+                    </div>
+                    <button type="submit" className="text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md" style={{ background: 'linear-gradient(135deg, #4f46e5, #4338ca)' }}>
+                      Grant Access
+                    </button>
+                  </form>
+
+                  {/* List of existing subadmins */}
+                  <div>
+                    <h3 className="font-bold text-slate-900 mb-4">Authorized Subadmins</h3>
+                    <div className="flex flex-col gap-3">
+                      {subadmins.map(s => (
+                        <div key={s.id} className="border border-slate-100 bg-slate-50 rounded-xl p-4 flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold text-slate-900 text-sm">{s.name}</h4>
+                            <p className="text-xs text-slate-500">{s.email}</p>
+                          </div>
+                          <button onClick={() => removeSubadmin(s.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {subadmins.length === 0 && (
+                        <div className="text-center p-8 text-slate-500 text-sm border border-dashed border-slate-200 rounded-xl">
+                          No subadmins found.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </div>

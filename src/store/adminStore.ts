@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Application, Query, CounselorApplication, Counselor } from '../types';
-import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge } from '../lib/supabase';
+import type { Application, Query, CounselorApplication, Counselor, User } from '../types';
+import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB } from '../lib/supabase';
 import { mockApplications, mockQueries, mockCounselors } from '../data/mockData';
 
 interface AdminState {
   applications: Application[];
   queries: Query[];
   counselors: Counselor[];
+  subadmins: User[];
   counselorApplications: CounselorApplication[];
   isLoading: boolean;
   isInitialized: boolean;
@@ -23,6 +24,8 @@ interface AdminState {
   updateCounselorFakeAdmissions: (counselorId: string, count: number) => Promise<void>;
   addQuery: (query: Partial<Query>) => void;
   approveCounselorApp: (id: string) => Promise<boolean>;
+  addSubadmin: (email: string) => Promise<void>;
+  removeSubadmin: (id: string) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>()(
@@ -31,6 +34,7 @@ export const useAdminStore = create<AdminState>()(
       applications: [],
       queries: [],
       counselors: [],
+      subadmins: [],
       counselorApplications: [],
       isLoading: false,
       isInitialized: false,
@@ -40,19 +44,20 @@ export const useAdminStore = create<AdminState>()(
     
     try {
       if (isSupabaseConfigured()) {
-        const [apps, qs, dbCounselors, cApps] = await Promise.all([
+        const [apps, qs, dbCounselors, cApps, dbSubadmins] = await Promise.all([
           fetchApplicationsFromDB(), 
           fetchQueriesFromDB(),
           fetchCounselorsFromDB(),
-          fetchCounselorApplicationsFromDB()
+          fetchCounselorApplicationsFromDB(),
+          fetchSubadminsFromDB()
         ]);
         const finalCounselors = dbCounselors.length > 0 ? dbCounselors : (mockCounselors as Counselor[]);
-        set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, isInitialized: true, isLoading: false });
+        set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, isInitialized: true, isLoading: false });
       } else {
         const finalCounselors = get().counselors.length > 0 ? get().counselors : (mockCounselors as Counselor[]);
         const finalApps = get().applications.length > 0 ? get().applications : mockApplications;
         const finalQueries = get().queries.length > 0 ? get().queries : mockQueries;
-        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors, counselorApplications: get().counselorApplications || [], isInitialized: true, isLoading: false });
+        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors, counselorApplications: get().counselorApplications || [], subadmins: get().subadmins || [], isInitialized: true, isLoading: false });
       }
     } catch (error) {
       console.error("Failed to initialize admin data", error);
@@ -268,6 +273,27 @@ export const useAdminStore = create<AdminState>()(
       return false;
     }
     return false;
+  },
+
+  addSubadmin: async (email) => {
+    let newUser: User = {
+      id: `subadmin-${Date.now()}`,
+      name: email.split('@')[0],
+      email,
+      role: 'subadmin'
+    };
+    if (isSupabaseConfigured()) {
+      const dbUser = await addSubadminToDB(email);
+      if (dbUser) newUser = dbUser;
+    }
+    set(state => ({ subadmins: [...state.subadmins, newUser] }));
+  },
+
+  removeSubadmin: async (id) => {
+    if (isSupabaseConfigured()) {
+      await removeSubadminFromDB(id);
+    }
+    set(state => ({ subadmins: state.subadmins.filter(s => s.id !== id) }));
   }
 }), {
   name: 'admin-storage',

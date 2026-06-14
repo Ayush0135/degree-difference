@@ -82,7 +82,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'admin' | 'counselor';
+  role: 'student' | 'admin' | 'counselor' | 'subadmin';
   phone?: string;
   avatar?: string;
 }

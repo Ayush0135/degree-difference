@@ -73,7 +73,7 @@ function AnimatedRoutes() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'subadmin']}>
             <AdminDashboard />
           </ProtectedRoute>
         }
@@ -81,7 +81,7 @@ function AnimatedRoutes() {
       <Route
         path="/admin/add-college"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'subadmin']}>
             <AddCollege />
           </ProtectedRoute>
         }
@@ -89,7 +89,7 @@ function AnimatedRoutes() {
       <Route
         path="/admin/edit-college/:id"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'subadmin']}>
             <AddCollege />
           </ProtectedRoute>
         }

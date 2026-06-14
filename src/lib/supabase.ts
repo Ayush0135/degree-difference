@@ -432,6 +432,35 @@ export async function fetchCounselorsFromDB(): Promise<any[]> {
   });
 }
 
+export async function fetchSubadminsFromDB(): Promise<any[]> {
+  if (!supabase) return [];
+  const { data: users, error } = await supabase.from('users').select('*').eq('role', 'subadmin');
+  if (error || !users) return [];
+  return users;
+}
+
+export async function addSubadminToDB(email: string): Promise<any | null> {
+  if (!supabase) return null;
+  const payload = {
+    id: `subadmin-${Date.now()}`,
+    name: email.split('@')[0],
+    email: email,
+    role: 'subadmin'
+  };
+  const { data, error } = await supabase.from('users').insert([payload]).select().single();
+  if (error) {
+    console.error('Error adding subadmin:', error);
+    return null;
+  }
+  return data;
+}
+
+export async function removeSubadminFromDB(id: string): Promise<boolean> {
+  if (!supabase) return true;
+  const { error } = await supabase.from('users').delete().eq('id', id).eq('role', 'subadmin');
+  return !error;
+}
+
 export async function updateCounselorFakeAdmissionsInDB(id: string, count: number): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.from('users').update({ fake_admissions_count: count }).eq('id', id);

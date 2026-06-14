@@ -29,7 +29,7 @@ export default function Login() {
   }, [location.search]);
 
   const { login } = useAuthStore();
-  const { counselors, initializeData, isInitialized } = useAdminStore();
+  const { counselors, initializeData, isInitialized, subadmins } = useAdminStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,10 +47,19 @@ export default function Login() {
       if (email !== 'ayush.kashyap7155@gmail.com') {
         try {
           const dbUser = await getUserByEmail(email);
-          if (!dbUser || dbUser.role !== 'admin') {
-            setError('Unauthorized: You are not an authorized admin.');
+          const isSubadminLocal = subadmins?.some(s => s.email === email);
+          
+          if (!isSubadminLocal && (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'subadmin'))) {
+            setError('Unauthorized: You are not an authorized admin or subadmin.');
             setIsLoading(false);
             return;
+          }
+          
+          if (dbUser) {
+            // Set name to dbUser.name if they exist
+            setName(dbUser.name || email.split('@')[0]);
+          } else {
+            setName(email.split('@')[0]);
           }
         } catch (err) {
           setError('Database error occurred while checking authorization.');
@@ -128,11 +137,23 @@ export default function Login() {
         if (!dbUser) {
           dbUser = await createUser({ name: name || email.split('@')[0], email, role: email === 'ayush.kashyap7155@gmail.com' ? 'admin' : role });
         }
-        if (!dbUser) throw new Error("Failed to sync user with database. Is Supabase connected?");
         
-        const user: UserType = { id: dbUser.id, name: dbUser.name, email: dbUser.email, role: dbUser.role as any };
+        let user: UserType;
+        if (dbUser) {
+          user = { id: dbUser.id, name: dbUser.name, email: dbUser.email, role: dbUser.role as any };
+        } else {
+          // Local fallback for offline testing
+          const isSubadmin = subadmins?.some(s => s.email === email);
+          user = {
+            id: `local-${Date.now()}`,
+            name: name || email.split('@')[0],
+            email,
+            role: email === 'ayush.kashyap7155@gmail.com' ? 'admin' : (isSubadmin ? 'subadmin' : role) as any
+          };
+        }
+        
         login(user);
-        navigate(user.role === 'admin' ? '/admin' : user.role === 'counselor' ? '/counselor' : '/dashboard');
+        navigate((user.role === 'admin' || user.role === 'subadmin') ? '/admin' : user.role === 'counselor' ? '/counselor' : '/dashboard');
       } catch (err: any) {
         setError(err.message || 'Database error occurred.');
       } finally {
