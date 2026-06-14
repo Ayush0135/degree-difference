@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCollegeStore } from '../store/collegeStore';
-import { addApplicationToDB } from '../lib/supabase';
+import { useAdminStore } from '../store/adminStore';
 import { GraduationCap, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -9,6 +9,7 @@ export default function StudentSelfRegister() {
   const { counselorId } = useParams<{ counselorId: string }>();
   const navigate = useNavigate();
   const { colleges } = useCollegeStore();
+  const { manuallyRegisterStudent } = useAdminStore();
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +46,7 @@ export default function StudentSelfRegister() {
       }
     };
 
-    await addApplicationToDB(payload);
+    await manuallyRegisterStudent(payload);
     setLoading(false);
     setSuccess(true);
   };
