@@ -23,7 +23,7 @@ function Badge({ status }: { status: string }) {
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
-  const { applications, queries, initializeData, updateApplicationStatus, advanceApplicationStep, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized, subadmins, addSubadmin, removeSubadmin, marqueeOffer: storeMarquee, updateMarqueeOffer, setupRealtime } = useAdminStore();
+  const { applications, queries, initializeData, updateApplicationStatus, advanceApplicationStep, assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors, counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions, isInitialized, subadmins, addSubadmin, removeSubadmin, marqueeOffer: storeMarquee, updateMarqueeOffer, setupRealtime, students } = useAdminStore();
   const { colleges, initializeColleges, addCollege, deleteCollege } = useCollegeStore();
   const dbConnected = isSupabaseConfigured();
   const [incentiveForm, setIncentiveForm] = useState<string>('');
@@ -36,7 +36,7 @@ export default function AdminDashboard() {
   }, [initializeColleges, initializeData, setupRealtime]);
 
   const [showAdd, setShowAdd] = useState(false);
-  const [tab, setTab] = useState<'colleges' | 'applications' | 'queries' | 'manual_reg' | 'rule_book' | 'manage_counselors' | 'counselor_applications' | 'leaderboard' | 'subadmins'>('colleges');
+  const [tab, setTab] = useState<'colleges' | 'applications' | 'queries' | 'manual_reg' | 'rule_book' | 'manage_counselors' | 'counselor_applications' | 'leaderboard' | 'subadmins' | 'registered_students'>('colleges');
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [showCounselorModal, setShowCounselorModal] = useState(false);
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
     alert('Marquee offer updated successfully!');
   };
 
-  const vals = [colleges.length, applications.length, queries.length, '500+'];
+  const vals = [colleges.length, applications.length, queries.length, students.length];
 
   const handleManualReg = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="border-b border-slate-100 overflow-x-auto">
             <div className="flex px-4 sm:px-6 min-w-max">
-              {(['colleges', 'applications', 'queries', 'manual_reg', 'rule_book', 'leaderboard', ...(user?.role === 'admin' ? ['manage_counselors', 'counselor_applications', 'subadmins'] : [])] as const).map((t) => (
+              {(['colleges', 'applications', 'registered_students', 'queries', 'manual_reg', 'rule_book', 'leaderboard', ...(user?.role === 'admin' ? ['manage_counselors', 'counselor_applications', 'subadmins'] : [])] as const).map((t) => (
                 <button key={t} onClick={() => setTab(t as any)} className={`relative py-3.5 px-5 text-sm font-semibold capitalize whitespace-nowrap ${tab === t ? 'text-teal-700' : 'text-slate-400 hover:text-slate-600'}`}>
                   {t.replace('_', ' ')}
                   {tab === t && <motion.div layoutId="admin-tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600 rounded-full" />}
@@ -256,6 +256,39 @@ export default function AdminDashboard() {
                       </div>
                     </motion.div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {tab === 'registered_students' && (
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 mb-6">Registered Students</h2>
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Registration Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-200">
+                      {students.map((student) => (
+                        <tr key={student.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{student.name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{student.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{new Date(student.created_at || Date.now()).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 capitalize"><span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-xs font-semibold">{student.role}</span></td>
+                        </tr>
+                      ))}
+                      {students.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-4 text-center text-sm text-slate-500">No students found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}

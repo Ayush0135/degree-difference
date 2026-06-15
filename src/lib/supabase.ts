@@ -685,3 +685,14 @@ export async function awardCounselorBadge(counselorId: string, badgeType: string
   );
   return !error;
 }
+
+// STUDENTS
+export async function fetchStudentsFromDB(): Promise<any[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('users').select('*').eq('role', 'student').order('created_at', { ascending: false });
+  if (error) {
+    console.error('Error fetching students:', error);
+    return [];
+  }
+  return data || [];
+}

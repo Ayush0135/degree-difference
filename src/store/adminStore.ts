@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Application, Query, CounselorApplication, Counselor, User } from '../types';
-import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB } from '../lib/supabase';
+import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB } from '../lib/supabase';
 import { mockApplications, mockQueries, mockCounselors } from '../data/mockData';
 
 interface AdminState {
@@ -10,6 +10,7 @@ interface AdminState {
   counselors: Counselor[];
   subadmins: User[];
   counselorApplications: CounselorApplication[];
+  students: User[];
   isLoading: boolean;
   isInitialized: boolean;
   marqueeOffer: string;
@@ -39,6 +40,7 @@ export const useAdminStore = create<AdminState>()(
       counselors: [],
       subadmins: [],
       counselorApplications: [],
+      students: [],
       isLoading: false,
       isInitialized: false,
       marqueeOffer: '🎉 Special Bonus: Complete 5 admissions this month and get a ₹10,000 bonus!',
@@ -48,13 +50,14 @@ export const useAdminStore = create<AdminState>()(
     
     try {
       if (isSupabaseConfigured()) {
-        const [apps, qs, dbCounselors, cApps, dbSubadmins, marquee] = await Promise.all([
+        const [apps, qs, dbCounselors, cApps, dbSubadmins, marquee, dbStudents] = await Promise.all([
           fetchApplicationsFromDB(), 
           fetchQueriesFromDB(),
           fetchCounselorsFromDB(),
           fetchCounselorApplicationsFromDB(),
           fetchSubadminsFromDB(),
-          fetchPlatformSettings('counselor_marquee_offer')
+          fetchPlatformSettings('counselor_marquee_offer'),
+          fetchStudentsFromDB()
         ]);
         
         let finalApps = apps;
@@ -80,12 +83,12 @@ export const useAdminStore = create<AdminState>()(
         }
 
         finalCounselors = finalCounselors.length > 0 ? finalCounselors : (mockCounselors as Counselor[]);
-        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, marqueeOffer: marquee || get().marqueeOffer, isInitialized: true, isLoading: false });
+        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, students: dbStudents, marqueeOffer: marquee || get().marqueeOffer, isInitialized: true, isLoading: false });
       } else {
         const finalCounselors = get().counselors.length > 0 ? get().counselors : (mockCounselors as Counselor[]);
         const finalApps = get().applications.length > 0 ? get().applications : mockApplications;
         const finalQueries = get().queries.length > 0 ? get().queries : mockQueries;
-        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors, counselorApplications: get().counselorApplications || [], subadmins: get().subadmins || [], isInitialized: true, isLoading: false });
+        set({ applications: finalApps, queries: finalQueries, counselors: finalCounselors, counselorApplications: get().counselorApplications || [], subadmins: get().subadmins || [], students: get().students || [], isInitialized: true, isLoading: false });
       }
     } catch (error) {
       console.error("Failed to initialize admin data", error);
@@ -100,16 +103,17 @@ export const useAdminStore = create<AdminState>()(
 
     const handleChanges = async () => {
       console.log('Realtime DB change detected. Syncing...');
-      const [apps, qs, dbCounselors, cApps, dbSubadmins, marquee] = await Promise.all([
+      const [apps, qs, dbCounselors, cApps, dbSubadmins, marquee, dbStudents] = await Promise.all([
         fetchApplicationsFromDB(), 
         fetchQueriesFromDB(),
         fetchCounselorsFromDB(),
         fetchCounselorApplicationsFromDB(),
         fetchSubadminsFromDB(),
-        fetchPlatformSettings('counselor_marquee_offer')
+        fetchPlatformSettings('counselor_marquee_offer'),
+        fetchStudentsFromDB()
       ]);
       const finalCounselors = dbCounselors.length > 0 ? dbCounselors : (mockCounselors as Counselor[]);
-      set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, marqueeOffer: marquee || get().marqueeOffer });
+      set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, students: dbStudents, marqueeOffer: marquee || get().marqueeOffer });
     };
 
     const channel = supabase.channel('schema-db-changes')
