@@ -32,6 +32,8 @@ interface AdminState {
   setupRealtime: () => void;
 }
 
+let isRealtimeSetup = false;
+
 export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
@@ -97,9 +99,12 @@ export const useAdminStore = create<AdminState>()(
   },
 
   setupRealtime: async () => {
+    if (isRealtimeSetup) return;
     if (!isSupabaseConfigured()) return;
     const { supabase } = await import('../lib/supabase');
     if (!supabase) return;
+
+    isRealtimeSetup = true;
 
     const handleChanges = async () => {
       console.log('Realtime DB change detected. Syncing...');
