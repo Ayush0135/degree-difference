@@ -32,8 +32,6 @@ interface AdminState {
   setupRealtime: () => void;
 }
 
-let isRealtimeSetup = false;
-
 export const useAdminStore = create<AdminState>()(
   persist(
     (set, get) => ({
@@ -99,12 +97,16 @@ export const useAdminStore = create<AdminState>()(
   },
 
   setupRealtime: async () => {
-    if (isRealtimeSetup) return;
     if (!isSupabaseConfigured()) return;
     const { supabase } = await import('../lib/supabase');
     if (!supabase) return;
 
-    isRealtimeSetup = true;
+    const channelTopic = 'realtime:schema-db-changes';
+    const existing = supabase.getChannels().find(c => c.topic === channelTopic);
+    if (existing) {
+      console.log('Supabase channel already exists, skipping duplicate subscription.');
+      return;
+    }
 
     const handleChanges = async () => {
       console.log('Realtime DB change detected. Syncing...');
@@ -121,7 +123,7 @@ export const useAdminStore = create<AdminState>()(
       set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, students: dbStudents, marqueeOffer: marquee || get().marqueeOffer });
     };
 
-    const channel = supabase.channel('schema-db-changes')
+    supabase.channel('schema-db-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public' },
