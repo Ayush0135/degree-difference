@@ -161,6 +161,14 @@ export default function Login() {
         }
         
         login(user);
+        
+        // Restore User State from DB
+        const { fetchUserStateFromDB } = require('../lib/supabase');
+        const { useCollegeStore } = require('../store/collegeStore');
+        const stateData = await fetchUserStateFromDB(user.id);
+        if (stateData && stateData.favorites) {
+          useCollegeStore.getState().setFavorites(stateData.favorites);
+        }
         navigate((user.role === 'admin' || user.role === 'subadmin') ? '/admin' : user.role === 'counselor' ? '/counselor' : '/dashboard');
       } catch (err: any) {
         setError(err.message || 'Database error occurred.');

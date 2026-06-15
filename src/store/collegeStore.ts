@@ -18,9 +18,10 @@ interface CollegeState {
   setColleges: (colleges: College[]) => void;
   initializeColleges: () => Promise<void>;
   addCollege: (college: Omit<College, 'id'>) => Promise<void>;
-  updateCollege: (id: string, updates: Partial<College>) => Promise<void>;
+  updateCollege: (id: string, college: Partial<College>) => Promise<void>;
   deleteCollege: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => void;
+  setFavorites: (favorites: string[]) => void;
 }
 
 export const useCollegeStore = create<CollegeState>()(
@@ -156,12 +157,25 @@ export const useCollegeStore = create<CollegeState>()(
         }
       },
 
-      toggleFavorite: (id) =>
-        set((state) => ({
-          favorites: state.favorites.includes(id)
+      toggleFavorite: (id) => {
+        set((state) => {
+          const nextFavorites = state.favorites.includes(id)
             ? state.favorites.filter((fid) => fid !== id)
-            : [...state.favorites, id],
-        })),
+            : [...state.favorites, id];
+            
+          // Sync to DB
+          const { syncUserStateToDB } = require('../lib/supabase');
+          const { useAuthStore } = require('./authStore');
+          const userId = useAuthStore.getState().user?.id;
+          if (userId) {
+            syncUserStateToDB(userId, { favorites: nextFavorites });
+          }
+          
+          return { favorites: nextFavorites };
+        });
+      },
+
+      setFavorites: (favorites) => set({ favorites }),
     }),
     {
       name: 'college-storage',

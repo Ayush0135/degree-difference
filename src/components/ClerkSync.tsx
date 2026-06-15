@@ -42,6 +42,14 @@ export default function ClerkSync() {
             role: dbUser.role as any
           });
 
+          // Restore User State from DB
+          const { fetchUserStateFromDB } = require('../lib/supabase');
+          const { useCollegeStore } = require('../store/collegeStore');
+          const stateData = await fetchUserStateFromDB(dbUser.id);
+          if (stateData && stateData.favorites) {
+            useCollegeStore.getState().setFavorites(stateData.favorites);
+          }
+
           // Redirect to respective dashboard
           if (dbUser.role === 'admin') navigate('/admin');
           else if (dbUser.role === 'counselor') navigate('/counselor');

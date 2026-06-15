@@ -696,3 +696,29 @@ export async function fetchStudentsFromDB(): Promise<any[]> {
   }
   return data || [];
 }
+
+// USER STATES (Cross-device sync)
+export async function fetchUserStateFromDB(userId: string): Promise<any | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('user_states').select('state_data').eq('user_id', userId).single();
+  if (error) {
+    if (error.code !== 'PGRST116') { // PGRST116 means no rows returned, which is fine for new users
+      console.error('Error fetching user state:', error);
+    }
+    return null;
+  }
+  return data?.state_data || null;
+}
+
+export async function syncUserStateToDB(userId: string, stateData: any): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('user_states').upsert(
+    [{ user_id: userId, state_data: stateData, updated_at: new Date().toISOString() }],
+    { onConflict: 'user_id' }
+  );
+  if (error) {
+    console.error('Error syncing user state:', error);
+    return false;
+  }
+  return true;
+}
