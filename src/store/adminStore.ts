@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Application, Query, CounselorApplication, Counselor, User } from '../types';
-import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB, updateCounselorFakeAdmissionsInDB, updatePlatformSettings, supabase, getUserByEmail } from '../lib/supabase';
+import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB, updateCounselorFakeAdmissionsInDB, updatePlatformSettings, fetchPlatformSettings, supabase, getUserByEmail } from '../lib/supabase';
 import { mockApplications, mockQueries, mockCounselors } from '../data/mockData';
 
 interface AdminState {
