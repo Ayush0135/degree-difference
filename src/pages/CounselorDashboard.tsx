@@ -1,75 +1,109 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, FileText, CheckCircle, TrendingUp, X, Award, MessageSquare, Upload, Plus, Clock, Camera, Save, ArrowRight, Home, DollarSign, BarChart2, UserCircle, UserPlus, QrCode, ChevronRight, Sparkles } from 'lucide-react';
+import {
+  Users, FileText, CheckCircle, TrendingUp, X, Award, MessageSquare,
+  Upload, Plus, Clock, Camera, Save, Home, DollarSign, UserCircle,
+  UserPlus, QrCode, ChevronRight, Menu, GraduationCap, Copy, Check,
+  AlertCircle, ArrowUpRight, Circle
+} from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAuthStore } from '../store/authStore';
-import { uploadAvatar, updateUserProfile, fetchCounselorTasks, addCounselorTask, updateCounselorTask, deleteCounselorTask, uploadDocumentToDB } from '../lib/supabase';
+import {
+  uploadAvatar, updateUserProfile, fetchCounselorTasks,
+  addCounselorTask, updateCounselorTask, deleteCounselorTask, uploadDocumentToDB
+} from '../lib/supabase';
 import ApplicationChat from '../components/ApplicationChat';
 
-function Badge({ status }: { status: string }) {
-  const m: Record<string, string> = {
-    approved: 'bg-emerald-100 text-emerald-700',
-    rejected: 'bg-red-100 text-red-700',
-    under_review: 'bg-amber-100 text-amber-700',
-    counseling: 'bg-cyan-100 text-cyan-700',
-    pending: 'bg-slate-100 text-slate-600'
+function StatusPill({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    approved: 'text-emerald-600 bg-emerald-50 ring-1 ring-emerald-200',
+    rejected: 'text-red-500 bg-red-50 ring-1 ring-red-200',
+    under_review: 'text-amber-600 bg-amber-50 ring-1 ring-amber-200',
+    counseling: 'text-sky-600 bg-sky-50 ring-1 ring-sky-200',
+    pending: 'text-slate-500 bg-slate-100',
   };
-  return <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 uppercase ${m[status] || 'bg-slate-100 text-slate-600'}`}>{status.replace('_', ' ')}</span>;
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide uppercase shrink-0 ${styles[status] || 'text-slate-500 bg-slate-100'}`}>
+      {status.replace('_', ' ')}
+    </span>
+  );
 }
 
+type View = 'home' | 'students' | 'earnings' | 'profile';
+
 export default function CounselorDashboard() {
-  const [sel, setSel] = useState<string | null>(null);
-  const [scholarshipForm, setScholarshipForm] = useState<{amount: string, details: string} | null>(null);
-  const [showRegForm, setShowRegForm] = useState(false);
-  const [showMsgForm, setShowMsgForm] = useState(false);
-  const [showDocsModal, setShowDocsModal] = useState(false);
-  const [view, setView] = useState<'dashboard' | 'students' | 'earnings' | 'profile'>('dashboard');
+  const [view, setView] = useState<View>('home');
+  const [sel, setSelId] = useState<string | null>(null);
+  const [scholarshipForm, setScholarshipForm] = useState<{ amount: string; details: string } | null>(null);
+  const [showRegModal, setShowRegModal] = useState(false);
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { user, updateUser } = useAuthStore();
   const counselorName = user?.name || 'Counselor';
+  const counselorId = user?.id || 'counselor1';
 
   const [profileForm, setProfileForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
-    avatar: user?.avatar || ''
+    avatar: user?.avatar || '',
   });
   const [tasks, setTasks] = useState<any[]>([]);
-  const [newTaskText, setNewTaskText] = useState('');
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [chatAppId, setChatAppId] = useState<{id: string, name: string} | null>(null);
+  const [newTask, setNewTask] = useState('');
+  const [chatAppId, setChatAppId] = useState<{ id: string; name: string } | null>(null);
   const [badges, setBadges] = useState<any[]>([]);
 
   const registrationUrl = `${window.location.origin}/#/register/${user?.id || 'demo'}?cName=${encodeURIComponent(counselorName)}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(registrationUrl)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(registrationUrl)}`;
+
+  const {
+    applications, initializeData, setupRealtime,
+    manuallyRegisterStudent, addQuery, counselors, marqueeOffer,
+    updateScholarship, advanceApplicationStep,
+  } = useAdminStore();
+  const { colleges } = useCollegeStore();
+
+  useEffect(() => {
+    initializeData().then(() => setupRealtime());
+  }, []);
 
   useEffect(() => {
     if (user?.id) {
-      import('../lib/supabase').then(s => {
-        s.fetchCounselorTasks(user.id).then(setTasks);
-        s.fetchCounselorBadges(user.id).then(setBadges);
-      });
+      fetchCounselorTasks(user.id).then(setTasks);
+      import('../lib/supabase').then(s => s.fetchCounselorBadges?.(user.id)?.then(setBadges));
     }
   }, [user?.id]);
 
+  const myApps = applications.filter(a => a.counselorId === counselorId);
+  const stats = {
+    total: myApps.length,
+    pending: myApps.filter(a => a.status === 'pending' || a.status === 'under_review').length,
+    approved: myApps.filter(a => a.status === 'approved').length,
+    counseling: myApps.filter(a => a.status === 'counseling').length,
+  };
+  const earned = myApps.reduce((s, a) => s + (a.incentiveAmount || 0), 0);
+  const conversions = myApps.filter(a => a.incentiveAmount && a.incentiveAmount > 0).length;
+
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskText.trim() || !user?.id) return;
-    const task = await addCounselorTask(user.id, newTaskText);
-    if (task) setTasks([task, ...tasks]);
-    setNewTaskText('');
+    if (!newTask.trim() || !user?.id) return;
+    const t = await addCounselorTask(user.id, newTask.trim());
+    if (t) setTasks(p => [t, ...p]);
+    setNewTask('');
   };
 
-  const handleToggleTask = async (id: string, currentStatus: boolean) => {
-    await updateCounselorTask(id, !currentStatus);
-    setTasks(tasks.map(t => t.id === id ? { ...t, is_completed: !currentStatus } : t));
+  const handleToggleTask = async (id: string, done: boolean) => {
+    await updateCounselorTask(id, !done);
+    setTasks(p => p.map(t => t.id === id ? { ...t, is_completed: !done } : t));
   };
 
   const handleDeleteTask = async (id: string) => {
     await deleteCounselorTask(id);
-    setTasks(tasks.filter(t => t.id !== id));
+    setTasks(p => p.filter(t => t.id !== id));
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,20 +111,16 @@ export default function CounselorDashboard() {
     if (!file || !user?.id) return;
     setIsUploading(true);
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const dataUrl = event.target?.result as string;
-      setProfileForm(prev => ({ ...prev, avatar: dataUrl }));
+    reader.onload = async (ev) => {
+      const preview = ev.target?.result as string;
+      setProfileForm(p => ({ ...p, avatar: preview }));
       try {
-        const publicUrl = await uploadAvatar(user.id, file);
-        if (publicUrl) {
-          setProfileForm(prev => ({ ...prev, avatar: publicUrl }));
-          await updateUserProfile(user.id, { avatar: publicUrl });
-          updateUser({ avatar: publicUrl });
-        } else {
-          setProfileForm(prev => ({ ...prev, avatar: user.avatar || '' }));
+        const url = await uploadAvatar(user.id, file);
+        if (url) {
+          setProfileForm(p => ({ ...p, avatar: url }));
+          await updateUserProfile(user.id, { avatar: url });
+          updateUser({ avatar: url });
         }
-      } catch (err) {
-        setProfileForm(prev => ({ ...prev, avatar: user.avatar || '' }));
       } finally {
         setIsUploading(false);
       }
@@ -101,754 +131,550 @@ export default function CounselorDashboard() {
   const handleSaveProfile = async () => {
     if (!user?.id) return;
     setIsUploading(true);
-    const success = await updateUserProfile(user.id, { name: profileForm.name, phone: profileForm.phone });
+    const ok = await updateUserProfile(user.id, { name: profileForm.name, phone: profileForm.phone });
     setIsUploading(false);
-    if (success) {
-      updateUser({ name: profileForm.name, phone: profileForm.phone });
-      alert('Profile updated!');
-    }
+    if (ok) updateUser({ name: profileForm.name, phone: profileForm.phone });
   };
-
-  const counselorId = user?.id || 'counselor1';
-  const { applications, updateScholarship, advanceApplicationStep, initializeData, setupRealtime, manuallyRegisterStudent, addQuery, counselors, marqueeOffer } = useAdminStore();
-  const { colleges } = useCollegeStore();
-
-  useEffect(() => {
-    initializeData().then(() => setupRealtime());
-  }, [initializeData, setupRealtime]);
-
-  const apps = applications.filter(a => a.counselorId === counselorId);
-  const totalApps = apps.length;
-  const pendingApps = apps.filter(a => a.status === 'under_review' || a.status === 'pending').length;
-  const approvedApps = apps.filter(a => a.status === 'approved').length;
-  const counselingApps = apps.filter(a => a.status === 'counseling').length;
-
-  const applicationsWithIncentives = apps.filter(a => a.incentiveAmount && a.incentiveAmount > 0);
-  const totalEarnings = applicationsWithIncentives.reduce((sum, a) => sum + (a.incentiveAmount || 0), 0);
 
   const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const fd = new FormData(e.currentTarget);
     manuallyRegisterStudent({
-      studentName: formData.get('name') as string,
-      studentEmail: formData.get('email') as string,
-      studentPhone: formData.get('phone') as string,
-      studentDob: formData.get('dob') as string,
-      studentGender: formData.get('gender') as string,
-      studentCity: formData.get('city') as string,
-      highSchoolMarks: formData.get('marks') as string,
-      course: formData.get('course') as string,
-      collegeId: formData.get('college') as string,
+      studentName: fd.get('name') as string,
+      studentEmail: fd.get('email') as string,
+      studentPhone: fd.get('phone') as string,
+      studentDob: fd.get('dob') as string,
+      studentGender: fd.get('gender') as string,
+      studentCity: fd.get('city') as string,
+      highSchoolMarks: fd.get('marks') as string,
+      course: fd.get('course') as string,
+      collegeId: fd.get('college') as string,
       counselorId,
       assignedCounselorName: counselorName,
     });
-    setShowRegForm(false);
+    setShowRegModal(false);
   };
 
   const handleSendMsg = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const fd = new FormData(e.currentTarget);
     addQuery({
       studentName: `Counselor: ${counselorName}`,
-      subject: formData.get('subject') as string,
-      message: formData.get('message') as string,
+      subject: fd.get('subject') as string,
+      message: fd.get('message') as string,
     });
-    setShowMsgForm(false);
-    alert('Message sent!');
+    setShowMsgModal(false);
   };
 
-  const navItems = [
-    { id: 'dashboard', icon: Home, label: 'Home' },
-    { id: 'students', icon: Users, label: 'Students' },
-    { id: 'earnings', icon: DollarSign, label: 'Earnings' },
-    { id: 'profile', icon: UserCircle, label: 'Profile' },
+  const handleCopy = () => {
+    navigator.clipboard.writeText(registrationUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const NAV = [
+    { id: 'home' as View, icon: Home, label: 'Home' },
+    { id: 'students' as View, icon: Users, label: 'Students' },
+    { id: 'earnings' as View, icon: DollarSign, label: 'Earnings' },
+    { id: 'profile' as View, icon: UserCircle, label: 'Profile' },
   ];
 
+  /* ─── Sheet modal wrapper ─── */
+  const Sheet = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50" onClick={onClose} />
+          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+            className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+              <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="overflow-y-auto flex-1">{children}</div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50" style={{ paddingBottom: '80px' }}>
+    <div className="min-h-screen bg-[#f7f7f8]" style={{ fontFamily: "'Inter', sans-serif", paddingBottom: '64px' }}>
 
       {/* Marquee */}
       {marqueeOffer && (
-        <div className="bg-gradient-to-r from-teal-900 to-emerald-900 text-teal-50 overflow-hidden py-2">
-          <div className="max-w-[100vw] overflow-hidden flex whitespace-nowrap">
-            <div className="animate-marquee flex items-center shrink-0">
-              {[0, 1, 2].map(i => (
-                <span key={i} className="mx-8 font-bold text-xs flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                  {marqueeOffer}
-                </span>
-              ))}
-            </div>
+        <div className="bg-[#0e0e10] text-slate-400 text-[11px] py-1.5 overflow-hidden">
+          <div className="animate-marquee whitespace-nowrap flex shrink-0">
+            {[0, 1, 2].map(i => (
+              <span key={i} className="mx-10 flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-teal-500 inline-block" />
+                {marqueeOffer}
+              </span>
+            ))}
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 sticky top-0 z-30">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center cursor-pointer"
-              onClick={() => setView('profile')}
-            >
-              {profileForm.avatar
-                ? <img src={profileForm.avatar} alt="" className="w-full h-full object-cover" />
-                : <span className="text-white font-bold text-sm">{counselorName.charAt(0).toUpperCase()}</span>
-              }
-            </div>
-            <div>
-              <p className="text-[11px] text-slate-400 font-medium">Welcome back 👋</p>
-              <h1 className="text-sm font-extrabold text-slate-900 leading-none">{counselorName}</h1>
-            </div>
+      <header className="sticky top-0 z-30 bg-white border-b border-slate-200/70 h-14 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div
+            onClick={() => setView('profile')}
+            className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs font-black cursor-pointer overflow-hidden shrink-0"
+          >
+            {profileForm.avatar
+              ? <img src={profileForm.avatar} alt="" className="w-full h-full object-cover" />
+              : counselorName.charAt(0).toUpperCase()
+            }
           </div>
-          <div className="flex items-center gap-2">
-            {badges.map(b => (
-              <span key={b.id} title={b.badge_name} className="text-base">
-                {b.icon_url === 'star' ? '⭐' : b.icon_url === 'crown' ? '👑' : '🏅'}
-              </span>
-            ))}
-            <button
-              onClick={() => setShowQRModal(true)}
-              className="flex items-center gap-1.5 bg-teal-600 text-white text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition-transform"
-            >
-              <QrCode className="h-3.5 w-3.5" />
-              QR
-            </button>
+          <div>
+            <p className="text-[10px] text-slate-400 font-medium leading-none mb-0.5">Welcome back</p>
+            <p className="text-sm font-bold text-slate-900 leading-none">{counselorName}</p>
           </div>
         </div>
-      </div>
+        <div className="flex items-center gap-2">
+          {badges.map(b => (
+            <span key={b.id} className="text-sm">{b.icon_url === 'star' ? '⭐' : b.icon_url === 'crown' ? '👑' : '🏅'}</span>
+          ))}
+          <button onClick={() => setShowQR(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-lg hover:bg-teal-100 active:scale-95 transition-all">
+            <QrCode className="h-3.5 w-3.5" /> QR
+          </button>
+        </div>
+      </header>
 
-      {/* Content */}
-      <div className="px-4 pt-4 max-w-2xl mx-auto">
+      {/* ── HOME ── */}
+      <AnimatePresence mode="wait">
+        {view === 'home' && (
+          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 max-w-lg mx-auto space-y-4">
 
-        {/* DASHBOARD VIEW */}
-        {view === 'dashboard' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {/* Stat row */}
+            <div className="grid grid-cols-4 gap-2">
               {[
-                { icon: Users, label: 'Total', val: totalApps, color: 'from-cyan-500 to-blue-600' },
-                { icon: Clock, label: 'Pending', val: pendingApps, color: 'from-amber-400 to-orange-500' },
-                { icon: CheckCircle, label: 'Approved', val: approvedApps, color: 'from-emerald-500 to-teal-600' },
-                { icon: TrendingUp, label: 'Counseling', val: counselingApps, color: 'from-violet-500 to-purple-600' },
+                { label: 'Total', val: stats.total, color: 'text-slate-900' },
+                { label: 'Pending', val: stats.pending, color: 'text-amber-600' },
+                { label: 'Approved', val: stats.approved, color: 'text-emerald-600' },
+                { label: 'Counseling', val: stats.counseling, color: 'text-sky-600' },
               ].map((s, i) => (
-                <motion.div
-                  key={s.label}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className={`bg-gradient-to-br ${s.color} rounded-2xl p-4 text-white shadow-sm`}
-                >
-                  <s.icon className="h-5 w-5 opacity-80 mb-2" />
-                  <p className="text-2xl font-black">{s.val}</p>
-                  <p className="text-[11px] font-semibold opacity-80 uppercase tracking-wider">{s.label}</p>
+                <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                  className="bg-white border border-slate-200/70 rounded-xl p-3 text-center">
+                  <p className={`text-xl font-black ${s.color}`}>{s.val}</p>
+                  <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mt-0.5">{s.label}</p>
                 </motion.div>
               ))}
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <button
-                onClick={() => setShowRegForm(true)}
-                className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm active:scale-95 transition-transform text-left"
-              >
-                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
-                  <UserPlus className="h-5 w-5 text-teal-600" />
+            {/* Earnings strip */}
+            <button onClick={() => setView('earnings')}
+              className="w-full bg-[#0e0e10] rounded-xl px-4 py-3.5 flex items-center justify-between group active:scale-[0.99] transition-transform">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-900 flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-teal-400" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Register</p>
-                  <p className="text-[10px] text-slate-400">Add student</p>
+                <div className="text-left">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total Earned</p>
+                  <p className="text-lg font-black text-white">₹{earned.toLocaleString()}</p>
                 </div>
-              </button>
-              <button
-                onClick={() => setShowMsgForm(true)}
-                className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm active:scale-95 transition-transform text-left"
-              >
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                  <MessageSquare className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Message</p>
-                  <p className="text-[10px] text-slate-400">Contact admin</p>
-                </div>
-              </button>
-              <button
-                onClick={() => setShowDocsModal(true)}
-                className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm active:scale-95 transition-transform text-left"
-              >
-                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                  <FileText className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Documents</p>
-                  <p className="text-[10px] text-slate-400">Review files</p>
-                </div>
-              </button>
-              <button
-                onClick={() => setView('earnings')}
-                className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm active:scale-95 transition-transform text-left"
-              >
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  <DollarSign className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">₹{totalEarnings.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-400">My earnings</p>
-                </div>
-              </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-500">{conversions} conversions</span>
+                <ChevronRight className="h-4 w-4 text-slate-600 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </button>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Register Student', sub: 'Walk-in entry', icon: UserPlus, action: () => setShowRegModal(true), color: 'bg-teal-500' },
+                { label: 'Message Admin', sub: 'Send a query', icon: MessageSquare, action: () => setShowMsgModal(true), color: 'bg-violet-500' },
+              ].map(a => (
+                <button key={a.label} onClick={a.action}
+                  className="bg-white border border-slate-200/70 rounded-xl px-4 py-3.5 text-left hover:shadow-sm active:scale-[0.98] transition-all">
+                  <div className={`w-7 h-7 ${a.color} rounded-lg flex items-center justify-center mb-2.5`}>
+                    <a.icon className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-900">{a.label}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{a.sub}</p>
+                </button>
+              ))}
             </div>
 
-            {/* Tasks */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-4">
-              <h2 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-teal-600" /> Tasks & Follow-ups
-              </h2>
-              <div className="flex flex-col gap-2 mb-3 max-h-44 overflow-y-auto">
-                {tasks.length === 0
-                  ? <p className="text-xs text-slate-400 text-center py-4">No tasks. All caught up! 🎉</p>
-                  : tasks.map(t => (
-                    <div key={t.id} className="flex items-center gap-3 py-1.5 group">
-                      <button
-                        onClick={() => handleToggleTask(t.id, t.is_completed)}
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${t.is_completed ? 'bg-teal-500 border-teal-500' : 'border-slate-300'}`}
-                      >
-                        {t.is_completed && <CheckCircle className="h-3 w-3 text-white" />}
-                      </button>
-                      <span className={`text-xs flex-1 ${t.is_completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.task_text}</span>
-                      <button onClick={() => handleDeleteTask(t.id)} className="opacity-0 group-hover:opacity-100 text-red-400 transition-opacity p-1">
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))
-                }
+            {/* Task list */}
+            <div className="bg-white border border-slate-200/70 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                <p className="text-sm font-bold text-slate-900">Follow-ups</p>
+                <span className="text-[10px] text-slate-400 font-semibold">{tasks.filter(t => !t.is_completed).length} active</span>
               </div>
-              <form onSubmit={handleAddTask} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newTaskText}
-                  onChange={e => setNewTaskText(e.target.value)}
-                  placeholder="Add a task..."
-                  className="flex-1 text-xs px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500"
-                />
-                <button
-                  type="submit"
-                  disabled={!newTaskText.trim()}
-                  className="bg-teal-600 disabled:bg-slate-200 text-white rounded-xl px-3 flex items-center justify-center active:scale-95 transition-transform"
-                >
-                  <Plus className="h-4 w-4" />
+              <div className="divide-y divide-slate-50 max-h-44 overflow-y-auto">
+                {tasks.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">No tasks. You're all clear!</p>
+                ) : tasks.map(t => (
+                  <div key={t.id} className="flex items-center gap-3 px-4 py-2.5 group hover:bg-slate-50 transition-colors">
+                    <button onClick={() => handleToggleTask(t.id, t.is_completed)}
+                      className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors
+                        ${t.is_completed ? 'bg-teal-500 border-teal-500' : 'border-slate-300 hover:border-teal-400'}`}>
+                      {t.is_completed && <Check className="h-2.5 w-2.5 text-white" />}
+                    </button>
+                    <span className={`text-xs flex-1 ${t.is_completed ? 'line-through text-slate-300' : 'text-slate-700'}`}>{t.task_text}</span>
+                    <button onClick={() => handleDeleteTask(t.id)} className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-400 transition-all">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={handleAddTask} className="flex items-center gap-2 px-3 py-2.5 border-t border-slate-100">
+                <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a follow-up task…"
+                  className="flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-teal-500 transition-colors" />
+                <button type="submit" disabled={!newTask.trim()} className="p-2 bg-teal-600 disabled:bg-slate-200 text-white rounded-lg active:scale-95 transition-all">
+                  <Plus className="h-3.5 w-3.5" />
                 </button>
               </form>
             </div>
 
             {/* Leaderboard preview */}
-            <div className="bg-gradient-to-br from-slate-900 to-teal-950 rounded-2xl p-4 mb-4 text-white">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold flex items-center gap-2"><Award className="h-4 w-4 text-amber-400" /> Top Counselors</h2>
-                <span className="text-[10px] text-slate-400">This Month</span>
+            <div className="bg-white border border-slate-200/70 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <p className="text-sm font-bold text-slate-900">This Month's Leaders</p>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="divide-y divide-slate-50">
                 {[...counselors]
                   .sort((a, b) => (b.totalAdmissions || 0) - (a.totalAdmissions || 0))
                   .slice(0, 3)
                   .map((c, idx) => (
-                    <div key={c.id} className={`flex items-center justify-between py-2 px-3 rounded-xl ${c.id === counselorId ? 'bg-teal-700/60' : 'bg-white/5'}`}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
-                        <span className="text-xs font-semibold">{c.name} {c.id === counselorId && <span className="text-teal-300 text-[10px]">(you)</span>}</span>
-                      </div>
-                      <span className="text-xs font-black text-teal-300">{c.totalAdmissions || 0}</span>
+                    <div key={c.id} className={`flex items-center gap-3 px-4 py-3 ${c.id === counselorId ? 'bg-teal-50' : ''}`}>
+                      <span className="text-base w-5 shrink-0">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
+                      <p className="text-sm font-semibold text-slate-800 flex-1 truncate">
+                        {c.name} {c.id === counselorId && <span className="text-[10px] text-teal-600 font-bold">(you)</span>}
+                      </p>
+                      <p className="text-sm font-black text-teal-600">{c.totalAdmissions || 0}</p>
                     </div>
                   ))}
-                {counselors.length === 0 && <p className="text-xs text-slate-400 text-center py-2">No data yet</p>}
+                {counselors.length === 0 && <p className="text-xs text-slate-400 text-center py-5">No data yet.</p>}
               </div>
             </div>
 
           </motion.div>
         )}
 
-        {/* STUDENTS VIEW */}
+        {/* ── STUDENTS ── */}
         {view === 'students' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h2 className="text-base font-bold text-slate-900 mb-4">Assigned Students ({apps.length})</h2>
-            {apps.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center">
-                <Users className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-400">No students assigned yet.</p>
-                <button
-                  onClick={() => setShowRegForm(true)}
-                  className="mt-4 bg-teal-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl active:scale-95 transition-transform"
-                >
-                  Register First Student
-                </button>
+          <motion.div key="students" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 max-w-lg mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-black text-slate-900">My Students</h2>
+                <p className="text-[11px] text-slate-400">{myApps.length} assigned</p>
+              </div>
+              <button onClick={() => setShowRegModal(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-teal-600 px-3 py-2 rounded-xl active:scale-95 transition-all">
+                <Plus className="h-3.5 w-3.5" /> Add
+              </button>
+            </div>
+
+            {myApps.length === 0 ? (
+              <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-2xl">
+                <Users className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                <p className="text-sm text-slate-400">No students yet.</p>
+                <button onClick={() => setShowRegModal(true)} className="mt-3 text-xs font-semibold text-teal-600 hover:text-teal-700">Register one →</button>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
-                {apps.map((a) => (
-                  <motion.div
-                    key={a.id}
-                    layout
-                    onClick={() => setSel(sel === a.id ? null : a.id)}
-                    className={`bg-white rounded-2xl border-2 shadow-sm cursor-pointer transition-all ${sel === a.id ? 'border-teal-500' : 'border-slate-100'}`}
-                  >
-                    <div className="p-4">
+              <div className="space-y-2">
+                {myApps.map(a => (
+                  <div key={a.id} className="bg-white border border-slate-200/70 rounded-xl overflow-hidden">
+                    <button className="w-full text-left px-4 py-3.5" onClick={() => setSelId(sel === a.id ? null : a.id)}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">
-                          <h3 className="font-bold text-slate-900 text-sm truncate">{a.studentName}</h3>
-                          <p className="text-xs text-slate-400 truncate">{a.collegeName} • {a.course}</p>
+                          <p className="text-sm font-bold text-slate-900 truncate">{a.studentName}</p>
+                          <p className="text-[11px] text-slate-400 truncate">{a.collegeName} · {a.course}</p>
                         </div>
-                        <Badge status={a.status} />
+                        <StatusPill status={a.status} />
                       </div>
-
                       {/* Progress bar */}
-                      <div className="mb-2">
-                        <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                      <div>
+                        <div className="flex justify-between text-[10px] text-slate-300 mb-1">
                           <span>{a.progress?.currentStage || 'Received'}</span>
                           <span>{a.progress?.step || 1}/{a.progress?.totalSteps || 5}</span>
                         </div>
-                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                          <div
-                            className="h-1.5 rounded-full transition-all"
-                            style={{
-                              width: `${((a.progress?.step || 1) / (a.progress?.totalSteps || 5)) * 100}%`,
-                              background: ((a.progress?.step || 1) / (a.progress?.totalSteps || 5)) < 0.5
-                                ? 'linear-gradient(to right, #f59e0b, #f97316)'
-                                : 'linear-gradient(to right, #10b981, #0891b2)'
-                            }}
-                          />
+                        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-teal-500 rounded-full transition-all"
+                            style={{ width: `${((a.progress?.step || 1) / (a.progress?.totalSteps || 5)) * 100}%` }} />
                         </div>
                       </div>
+                    </button>
 
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                        <span>{a.studentPhone}</span>
-                        {a.scholarshipAmount && (
-                          <span className="text-emerald-600 font-semibold">🎓 ₹{a.scholarshipAmount}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Expanded Actions */}
+                    {/* Expanded */}
                     <AnimatePresence>
                       {sel === a.id && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden border-t border-slate-100"
-                        >
-                          <div className="p-4">
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden border-t border-slate-100">
+                          <div className="px-4 py-3 space-y-2">
+                            <p className="text-[11px] text-slate-400">{a.studentPhone}</p>
+                            {a.scholarshipAmount && (
+                              <p className="text-[11px] text-emerald-600 font-semibold">🎓 Scholarship: ₹{a.scholarshipAmount} — {a.scholarshipDetails}</p>
+                            )}
+
                             {scholarshipForm ? (
-                              <form
-                                onClick={e => e.stopPropagation()}
-                                onSubmit={e => {
-                                  e.preventDefault();
-                                  updateScholarship(a.id, parseInt(scholarshipForm.amount), scholarshipForm.details);
-                                  setScholarshipForm(null);
-                                }}
-                                className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 mb-3"
-                              >
-                                <h4 className="text-xs font-bold text-emerald-800 mb-2">Add Scholarship</h4>
-                                <input
-                                  type="number" required placeholder="Amount (₹)"
-                                  value={scholarshipForm.amount}
-                                  onChange={e => setScholarshipForm({ ...scholarshipForm, amount: e.target.value })}
-                                  className="w-full text-xs px-3 py-2.5 border border-emerald-200 bg-white rounded-xl mb-2 outline-none"
-                                />
-                                <input
-                                  type="text" required placeholder="Reason (e.g. Merit >90%)"
-                                  value={scholarshipForm.details}
-                                  onChange={e => setScholarshipForm({ ...scholarshipForm, details: e.target.value })}
-                                  className="w-full text-xs px-3 py-2.5 border border-emerald-200 bg-white rounded-xl mb-3 outline-none"
-                                />
+                              <form onClick={e => e.stopPropagation()}
+                                onSubmit={e => { e.preventDefault(); updateScholarship(a.id, parseInt(scholarshipForm.amount), scholarshipForm.details); setScholarshipForm(null); }}
+                                className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 space-y-2">
+                                <p className="text-[11px] font-bold text-emerald-800">Add Scholarship</p>
+                                <input type="number" required placeholder="Amount ₹" value={scholarshipForm.amount} onChange={e => setScholarshipForm({ ...scholarshipForm, amount: e.target.value })}
+                                  className="w-full text-xs px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none" />
+                                <input type="text" required placeholder="Reason" value={scholarshipForm.details} onChange={e => setScholarshipForm({ ...scholarshipForm, details: e.target.value })}
+                                  className="w-full text-xs px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none" />
                                 <div className="flex gap-2">
-                                  <button type="submit" className="flex-1 bg-emerald-600 text-white text-xs font-bold py-2.5 rounded-xl active:scale-95">Save</button>
-                                  <button type="button" onClick={() => setScholarshipForm(null)} className="flex-1 bg-slate-100 text-slate-600 text-xs font-bold py-2.5 rounded-xl active:scale-95">Cancel</button>
+                                  <button type="submit" className="flex-1 text-xs font-bold text-white bg-emerald-600 py-2 rounded-lg">Save</button>
+                                  <button type="button" onClick={() => setScholarshipForm(null)} className="flex-1 text-xs font-bold text-slate-600 bg-slate-100 py-2 rounded-lg">Cancel</button>
                                 </div>
                               </form>
                             ) : (
-                              <div className="grid grid-cols-2 gap-2 mb-2">
-                                <button
-                                  onClick={e => { e.stopPropagation(); setScholarshipForm({ amount: '', details: '' }); }}
-                                  className="flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 py-3 rounded-xl text-xs font-semibold active:scale-95 transition-transform"
-                                >
-                                  <Award className="h-3.5 w-3.5" /> Scholarship
+                              <div className="flex gap-2">
+                                <button onClick={() => setScholarshipForm({ amount: '', details: '' })}
+                                  className="flex-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 py-2 rounded-xl active:scale-95 transition-all">
+                                  + Scholarship
                                 </button>
-                                <button
-                                  onClick={e => { e.stopPropagation(); setChatAppId({ id: a.id, name: a.studentName }); }}
-                                  className="flex items-center justify-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 py-3 rounded-xl text-xs font-semibold active:scale-95 transition-transform"
-                                >
-                                  <MessageSquare className="h-3.5 w-3.5" /> Notes
+                                <button onClick={() => setChatAppId({ id: a.id, name: a.studentName })}
+                                  className="flex-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 py-2 rounded-xl active:scale-95 transition-all">
+                                  Notes
                                 </button>
                               </div>
                             )}
-                            <label className="flex items-center justify-center gap-2 bg-slate-50 text-slate-600 border border-slate-200 py-3 rounded-xl text-xs font-semibold cursor-pointer active:scale-95 transition-transform w-full">
+
+                            <label className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 py-2.5 rounded-xl cursor-pointer active:scale-95 transition-all">
                               <Upload className="h-3.5 w-3.5" /> Upload Document
-                              <input
-                                type="file" className="hidden"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  const docs = await uploadDocumentToDB(file, a.id, a.documents || []);
-                                  if (docs) alert('Document uploaded!');
-                                  else alert('Upload failed.');
-                                }}
-                              />
+                              <input type="file" className="hidden" onChange={async e => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const docs = await uploadDocumentToDB(file, a.id, a.documents || []);
+                                if (docs) alert('Uploaded!');
+                              }} />
                             </label>
                           </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             )}
           </motion.div>
         )}
 
-        {/* EARNINGS VIEW */}
+        {/* ── EARNINGS ── */}
         {view === 'earnings' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h2 className="text-base font-bold text-slate-900 mb-4">My Earnings</h2>
+          <motion.div key="earnings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 max-w-lg mx-auto">
+            <div className="mb-4">
+              <h2 className="text-base font-black text-slate-900">Earnings</h2>
+              <p className="text-[11px] text-slate-400">Your incentive breakdown</p>
+            </div>
 
-            <div className="bg-gradient-to-br from-teal-600 to-cyan-700 rounded-2xl p-6 text-white shadow-lg mb-4">
-              <p className="text-teal-100 text-sm font-semibold mb-1">Total Earnings</p>
-              <p className="text-4xl font-black">₹{totalEarnings.toLocaleString()}</p>
-              <div className="flex gap-4 mt-4">
-                <div className="bg-white/10 rounded-xl p-3 flex-1 text-center">
-                  <p className="text-2xl font-black">{applicationsWithIncentives.length}</p>
-                  <p className="text-[10px] text-teal-100 font-semibold uppercase tracking-wider">Conversions</p>
-                </div>
-                <div className="bg-white/10 rounded-xl p-3 flex-1 text-center">
-                  <p className="text-2xl font-black">{apps.filter(a => a.status !== 'approved' && a.status !== 'rejected').length}</p>
-                  <p className="text-[10px] text-teal-100 font-semibold uppercase tracking-wider">In Progress</p>
-                </div>
+            <div className="bg-[#0e0e10] rounded-2xl p-5 mb-4">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-1">Total Earned</p>
+              <p className="text-4xl font-black text-white mb-4">₹{earned.toLocaleString()}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Conversions', val: conversions },
+                  { label: 'In Progress', val: myApps.filter(a => a.status !== 'approved' && a.status !== 'rejected').length },
+                ].map(s => (
+                  <div key={s.label} className="bg-white/5 rounded-xl p-3">
+                    <p className="text-2xl font-black text-white">{s.val}</p>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">{s.label}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-slate-100">
-                <h3 className="text-sm font-bold text-slate-900">Earning History</h3>
+            <div className="bg-white border border-slate-200/70 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <p className="text-sm font-bold text-slate-900">History</p>
               </div>
-              {applicationsWithIncentives.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Sparkles className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400">No earnings yet. Keep going!</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-50">
-                  {applicationsWithIncentives.map(a => (
-                    <div key={a.id} className="flex items-center justify-between p-4">
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-slate-900 truncate">{a.studentName}</h4>
-                        <p className="text-xs text-slate-400 truncate">{a.collegeName}</p>
-                      </div>
-                      <span className="shrink-0 ml-3 bg-emerald-100 text-emerald-800 font-black text-sm px-3 py-1.5 rounded-xl">
-                        +₹{a.incentiveAmount?.toLocaleString()}
-                      </span>
+              <div className="divide-y divide-slate-50">
+                {myApps.filter(a => a.incentiveAmount && a.incentiveAmount > 0).map(a => (
+                  <div key={a.id} className="flex items-center justify-between px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{a.studentName}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{a.collegeName}</p>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <span className="text-sm font-black text-emerald-600 shrink-0 ml-3">+₹{a.incentiveAmount?.toLocaleString()}</span>
+                  </div>
+                ))}
+                {conversions === 0 && <p className="text-xs text-slate-400 text-center py-8">No earnings yet. Keep going!</p>}
+              </div>
             </div>
           </motion.div>
         )}
 
-        {/* PROFILE VIEW */}
+        {/* ── PROFILE ── */}
         {view === 'profile' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h2 className="text-base font-bold text-slate-900 mb-4">My Profile</h2>
+          <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 max-w-lg mx-auto space-y-4">
+            <div className="mb-2">
+              <h2 className="text-base font-black text-slate-900">Profile</h2>
+            </div>
 
-            {/* Avatar */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4 flex flex-col items-center">
-              <div
-                className="relative group cursor-pointer mb-4"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-teal-400 to-cyan-500 border-4 border-white shadow-lg relative">
+            {/* Avatar card */}
+            <div className="bg-white border border-slate-200/70 rounded-xl p-5 flex flex-col items-center">
+              <div className="relative mb-3 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                <div className="w-20 h-20 rounded-full bg-slate-900 overflow-hidden flex items-center justify-center text-white text-2xl font-black border-2 border-slate-100 relative">
                   {profileForm.avatar
-                    ? <img src={profileForm.avatar} alt="Profile" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white">
-                        {counselorName.charAt(0).toUpperCase()}
-                      </div>
+                    ? <img src={profileForm.avatar} alt="" className="w-full h-full object-cover" />
+                    : counselorName.charAt(0).toUpperCase()
                   }
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera className="h-6 w-6 text-white" />
-                  </div>
                   {isUploading && (
-                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                      <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
                 </div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center border-2 border-white">
+                  <Camera className="h-3 w-3 text-white" />
+                </div>
               </div>
               <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
-              <p className="font-bold text-slate-900 text-lg">{counselorName}</p>
-              <p className="text-sm text-slate-400">{user?.email}</p>
+              <p className="font-bold text-slate-900">{counselorName}</p>
+              <p className="text-xs text-slate-400">{user?.email}</p>
             </div>
 
-            {/* Edit Form */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-4">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">Edit Info</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors"
-                    value={profileForm.name}
-                    onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
-                  />
+            {/* Edit form */}
+            <div className="bg-white border border-slate-200/70 rounded-xl p-5 space-y-4">
+              <h3 className="text-sm font-bold text-slate-900">Edit Information</h3>
+              {[
+                { label: 'Full Name', key: 'name', type: 'text' },
+                { label: 'Phone Number', key: 'phone', type: 'tel' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">{f.label}</label>
+                  <input type={f.type} value={(profileForm as any)[f.key]} onChange={e => setProfileForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 focus:bg-white transition-colors" />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors"
-                    value={profileForm.phone}
-                    onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Email</label>
-                  <input
-                    type="email"
-                    disabled
-                    className="w-full text-sm px-4 py-3 bg-slate-100 border border-slate-100 rounded-xl text-slate-400 cursor-not-allowed"
-                    value={user?.email || ''}
-                  />
-                </div>
+              ))}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Email</label>
+                <input type="email" disabled value={user?.email || ''}
+                  className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-slate-400 cursor-not-allowed" />
               </div>
-              <button
-                onClick={handleSaveProfile}
-                disabled={isUploading}
-                className="w-full mt-4 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm active:scale-95 transition-transform"
-              >
-                <Save className="h-4 w-4" /> {isUploading ? 'Saving...' : 'Save Changes'}
+              <button onClick={handleSaveProfile} disabled={isUploading}
+                className="w-full text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 py-3 rounded-xl active:scale-95 transition-all">
+                {isUploading ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
 
-            {/* QR Code */}
-            <button
-              onClick={() => setShowQRModal(true)}
-              className="w-full flex items-center justify-between bg-white rounded-2xl border border-slate-100 shadow-sm p-4 active:scale-95 transition-transform mb-4"
-            >
+            {/* QR shortcut */}
+            <button onClick={() => setShowQR(true)}
+              className="w-full bg-white border border-slate-200/70 rounded-xl px-4 py-3.5 flex items-center justify-between hover:shadow-sm active:scale-[0.99] transition-all">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
-                  <QrCode className="h-5 w-5 text-teal-600" />
+                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                  <QrCode className="h-4 w-4 text-slate-600" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-slate-900">My QR Code</p>
-                  <p className="text-xs text-slate-400">Share for student self-registration</p>
+                  <p className="text-sm font-semibold text-slate-900">My QR Code</p>
+                  <p className="text-[11px] text-slate-400">Share for self-registration</p>
                 </div>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-400" />
+              <ChevronRight className="h-4 w-4 text-slate-300" />
             </button>
           </motion.div>
         )}
+      </AnimatePresence>
 
-      </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-100 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+      {/* ── Bottom Nav ── */}
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200/70">
         <div className="flex max-w-md mx-auto">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setView(item.id as any)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-colors ${view === item.id ? 'text-teal-600' : 'text-slate-400'}`}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="text-[10px] font-bold">{item.label}</span>
-              {view === item.id && (
-                <motion.div layoutId="nav-dot" className="w-1 h-1 rounded-full bg-teal-600" />
-              )}
-            </button>
-          ))}
+          {NAV.map(item => {
+            const active = view === item.id;
+            return (
+              <button key={item.id} onClick={() => setView(item.id)}
+                className={`flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-colors ${active ? 'text-teal-600' : 'text-slate-400'}`}>
+                <item.icon className="h-5 w-5" />
+                <span className="text-[9px] font-bold">{item.label}</span>
+                {active && <motion.div layoutId="cnav-dot" className="w-1 h-1 rounded-full bg-teal-500" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Modals */}
-      <AnimatePresence>
-        {showRegForm && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white w-full sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl sm:max-w-lg"
-            >
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-900">Register Walk-in Student</h3>
-                <button onClick={() => setShowRegForm(false)} className="p-2 text-slate-400 rounded-xl hover:bg-slate-100">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="overflow-y-auto max-h-[80vh]">
-                <form onSubmit={handleRegister} className="p-4 grid grid-cols-1 gap-3">
-                  {[
-                    { label: 'Student Name', name: 'name', type: 'text', required: true },
-                    { label: 'Email', name: 'email', type: 'email', required: false },
-                    { label: 'Phone Number', name: 'phone', type: 'tel', required: true },
-                    { label: 'Date of Birth', name: 'dob', type: 'date', required: true },
-                    { label: 'City', name: 'city', type: 'text', required: true },
-                    { label: 'High School Marks (%)', name: 'marks', type: 'number', required: true },
-                    { label: 'Course', name: 'course', type: 'text', required: true },
-                  ].map(f => (
-                    <div key={f.name}>
-                      <label className="block text-xs font-bold text-slate-600 mb-1">{f.label}</label>
-                      <input
-                        type={f.type}
-                        name={f.name}
-                        required={f.required}
-                        className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500"
-                      />
-                    </div>
-                  ))}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">Gender</label>
-                    <select name="gender" required className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
-                      <option value="">Select</option>
-                      <option>Male</option>
-                      <option>Female</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">Target College</label>
-                    <select name="college" required className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
-                      <option value="">Select College</option>
-                      {colleges.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full mt-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
-                  >
-                    Submit Registration
-                  </button>
-                </form>
-              </div>
-            </motion.div>
+      {/* ── Register Modal ── */}
+      <Sheet open={showRegModal} onClose={() => setShowRegModal(false)} title="Register Walk-in Student">
+        <form onSubmit={handleRegister} className="p-5 space-y-3">
+          {[
+            { label: 'Student Name', name: 'name', type: 'text', required: true },
+            { label: 'Phone', name: 'phone', type: 'tel', required: true },
+            { label: 'Email', name: 'email', type: 'email', required: false },
+            { label: 'Date of Birth', name: 'dob', type: 'date', required: true },
+            { label: 'City', name: 'city', type: 'text', required: true },
+            { label: 'High School Marks (%)', name: 'marks', type: 'number', required: true },
+            { label: 'Course Interested', name: 'course', type: 'text', required: true },
+          ].map(f => (
+            <div key={f.name}>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">{f.label}</label>
+              <input type={f.type} name={f.name} required={f.required}
+                className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors" />
+            </div>
+          ))}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Gender</label>
+            <select name="gender" required className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
+              <option value="">Select…</option>
+              <option>Male</option><option>Female</option><option>Other</option>
+            </select>
           </div>
-        )}
-
-        {showMsgForm && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-            <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white w-full sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl sm:max-w-md"
-            >
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-900">Message Administration</h3>
-                <button onClick={() => setShowMsgForm(false)} className="p-2 text-slate-400 rounded-xl hover:bg-slate-100"><X className="h-4 w-4" /></button>
-              </div>
-              <form onSubmit={handleSendMsg} className="p-4 space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Subject</label>
-                  <input required name="subject" className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">Message</label>
-                  <textarea required name="message" rows={4} className="w-full text-sm px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 resize-none" />
-                </div>
-                <button type="submit" className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3.5 rounded-xl text-sm font-bold active:scale-95 transition-transform">
-                  Send Message
-                </button>
-              </form>
-            </motion.div>
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Target College</label>
+            <select name="college" required className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
+              <option value="">Select college…</option>
+              {colleges.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
-        )}
+          <button type="submit" className="w-full text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 py-3 rounded-xl active:scale-95 transition-all mt-2">
+            Submit Registration
+          </button>
+        </form>
+      </Sheet>
 
-        {showDocsModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-            <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white w-full sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl sm:max-w-lg"
-            >
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-900">Review Documents</h3>
-                <button onClick={() => setShowDocsModal(false)} className="p-2 text-slate-400 rounded-xl hover:bg-slate-100"><X className="h-4 w-4" /></button>
-              </div>
-              <div className="p-4 max-h-[60vh] overflow-y-auto space-y-3">
-                {applications.filter((a: any) => a.documents && a.documents.length > 0).length === 0 ? (
-                  <div className="text-center py-8 text-slate-400 text-sm border border-dashed border-slate-200 rounded-xl">No documents to review.</div>
-                ) : (
-                  applications.filter((a: any) => a.documents && a.documents.length > 0).map((a: any) => (
-                    <div key={a.id} className="flex items-center justify-between bg-slate-50 rounded-xl p-4">
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900">{a.studentName}</h4>
-                        <p className="text-xs text-slate-400">{a.documents.length} files</p>
-                      </div>
-                      <div className="flex gap-2">
-                        {a.documents.map((doc: any, i: number) => (
-                          <button key={i} onClick={() => window.open(doc.url, '_blank')} className="text-xs font-bold text-white bg-slate-800 px-3 py-1.5 rounded-lg">
-                            View
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
+      {/* ── Message Modal ── */}
+      <Sheet open={showMsgModal} onClose={() => setShowMsgModal(false)} title="Message Administration">
+        <form onSubmit={handleSendMsg} className="p-5 space-y-4">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Subject</label>
+            <input required name="subject" className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors" />
           </div>
-        )}
-
-        {showQRModal && (
-          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-            <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white w-full sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl sm:max-w-sm"
-            >
-              <div className="p-5 text-center border-b border-slate-100">
-                <button onClick={() => setShowQRModal(false)} className="absolute top-4 right-4 p-2 text-slate-400"><X className="h-5 w-5" /></button>
-                <div className="w-14 h-14 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <QrCode className="h-7 w-7" />
-                </div>
-                <h3 className="font-bold text-lg text-slate-900 mb-1">Your Personal QR Code</h3>
-                <p className="text-xs text-slate-400">Students scan this to self-register under you</p>
-              </div>
-              <div className="p-6 flex flex-col items-center bg-slate-50">
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-5">
-                  <img src={qrCodeUrl} alt="QR Code" className="w-52 h-52 object-contain" />
-                </div>
-                <div className="w-full">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 text-center">Or Share Link</p>
-                  <div className="flex items-center gap-2">
-                    <input readOnly value={registrationUrl} className="flex-1 text-xs px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 outline-none" />
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(registrationUrl); alert('Copied!'); }}
-                      className="bg-teal-600 text-white p-2.5 rounded-xl active:scale-95 transition-transform"
-                    >
-                      <Save className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Message</label>
+            <textarea required name="message" rows={5} className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 resize-none transition-colors" />
           </div>
-        )}
-      </AnimatePresence>
+          <button type="submit" className="w-full text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 py-3 rounded-xl active:scale-95 transition-all">
+            Send Message
+          </button>
+        </form>
+      </Sheet>
 
+      {/* ── QR Modal ── */}
+      <Sheet open={showQR} onClose={() => setShowQR(false)} title="My Registration QR">
+        <div className="p-5 flex flex-col items-center">
+          <p className="text-xs text-slate-400 text-center mb-5">Students scan this to self-register under your name.</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5">
+            <img src={qrCodeUrl} alt="QR Code" className="w-52 h-52 object-contain" />
+          </div>
+          <div className="w-full">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 text-center">Or share the link</p>
+            <div className="flex gap-2">
+              <input readOnly value={registrationUrl} className="flex-1 text-xs px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 outline-none" />
+              <button onClick={handleCopy}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 ${copied ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'}`}>
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Sheet>
+
+      {/* ── Chat ── */}
       <AnimatePresence>
         {chatAppId && (
-          <ApplicationChat
-            appId={chatAppId.id}
-            studentName={chatAppId.name}
-            currentUserId={user?.id || ''}
-            currentUserRole="counselor"
-            onClose={() => setChatAppId(null)}
-          />
+          <ApplicationChat appId={chatAppId.id} studentName={chatAppId.name}
+            currentUserId={user?.id || ''} currentUserRole="counselor" onClose={() => setChatAppId(null)} />
         )}
       </AnimatePresence>
     </div>
