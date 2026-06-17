@@ -98,18 +98,9 @@ export const useAdminStore = create<AdminState>()(
 
   setupRealtime: async () => {
     if (!isSupabaseConfigured()) return;
-    
     if (!supabase) return;
 
-    const channelTopic = 'realtime:schema-db-changes';
-    const existing = supabase.getChannels().find(c => c.topic === channelTopic);
-    if (existing) {
-      console.log('Supabase channel already exists, skipping duplicate subscription.');
-      return;
-    }
-
-    const handleChanges = async () => {
-      console.log('Realtime DB change detected. Syncing...');
+    const fetchAllData = async () => {
       const [apps, qs, dbCounselors, cApps, dbSubadmins, marquee, dbStudents] = await Promise.all([
         fetchApplicationsFromDB(), 
         fetchQueriesFromDB(),
@@ -123,15 +114,26 @@ export const useAdminStore = create<AdminState>()(
       set({ applications: apps, queries: qs, counselors: finalCounselors as Counselor[], counselorApplications: cApps, subadmins: dbSubadmins, students: dbStudents, marqueeOffer: marquee || get().marqueeOffer });
     };
 
-    supabase.channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public' },
-        handleChanges
-      )
-      .subscribe((status) => {
-        console.log('Supabase realtime status:', status);
-      });
+    // 1. Realtime subscription (instant push updates)
+    const channelTopic = 'realtime:schema-db-changes';
+    const existing = supabase.getChannels().find(c => c.topic === channelTopic);
+    if (!existing) {
+      supabase.channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => { fetchAllData(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { fetchAllData(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'queries' }, () => { fetchAllData(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_applications' }, () => { fetchAllData(); })
+        .subscribe((status) => {
+          console.log('Supabase realtime status:', status);
+        });
+    }
+
+    // 2. Polling fallback — re-fetch from DB every 15 seconds no matter what
+    const existingInterval = (window as any).__adminPollInterval;
+    if (existingInterval) clearInterval(existingInterval);
+    (window as any).__adminPollInterval = setInterval(() => {
+      fetchAllData();
+    }, 15000);
   },
 
   updateApplicationStatus: async (id, status) => {
