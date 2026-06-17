@@ -82,6 +82,8 @@ export default function Login() {
             name: dbUser.name,
             email: dbUser.email,
             role: dbUser.role,
+            phone: dbUser.phone,
+            avatar: dbUser.avatar,
             assignedStudents: [],
             specialization: []
           };
@@ -148,7 +150,14 @@ export default function Login() {
         
         let user: UserType;
         if (dbUser) {
-          user = { id: dbUser.id, name: dbUser.name, email: dbUser.email, role: dbUser.role as any };
+          user = { 
+            id: dbUser.id, 
+            name: dbUser.name, 
+            email: dbUser.email, 
+            role: dbUser.role as any,
+            phone: dbUser.phone,
+            avatar: dbUser.avatar
+          };
         } else {
           // Local fallback for offline testing
           const isSubadmin = subadmins?.some(s => s.email === email);
@@ -163,8 +172,8 @@ export default function Login() {
         login(user);
         
         // Restore User State from DB
-        const { fetchUserStateFromDB } = require('../lib/supabase');
-        const { useCollegeStore } = require('../store/collegeStore');
+        const { fetchUserStateFromDB } = await import('../lib/supabase');
+        const { useCollegeStore } = await import('../store/collegeStore');
         const stateData = await fetchUserStateFromDB(user.id);
         if (stateData && stateData.favorites) {
           useCollegeStore.getState().setFavorites(stateData.favorites);

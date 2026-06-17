@@ -389,7 +389,7 @@ export async function getUserByEmail(email: string): Promise<any | null> {
   return data;
 }
 
-export async function createUser(user: { name: string, email: string, role: string, password?: string }): Promise<any | null> {
+export async function createUser(user: { name: string, email: string, role: string, password?: string, phone?: string, avatar?: string }): Promise<any | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.from('users').insert([user]).select().single();
   if (error) {
@@ -423,6 +423,8 @@ export async function fetchCounselorsFromDB(): Promise<any[]> {
       email: u.email,
       role: u.role,
       password: u.password,
+      phone: u.phone,
+      avatar: u.avatar,
       assignedStudents: [],
       specialization: [],
       realAdmissions,

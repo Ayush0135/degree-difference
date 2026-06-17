@@ -20,7 +20,7 @@ interface CollegeState {
   addCollege: (college: Omit<College, 'id'>) => Promise<void>;
   updateCollege: (id: string, college: Partial<College>) => Promise<void>;
   deleteCollege: (id: string) => Promise<void>;
-  toggleFavorite: (id: string) => void;
+  toggleFavorite: (id: string) => Promise<void>;
   setFavorites: (favorites: string[]) => void;
 }
 
@@ -157,22 +157,26 @@ export const useCollegeStore = create<CollegeState>()(
         }
       },
 
-      toggleFavorite: (id) => {
-        set((state) => {
-          const nextFavorites = state.favorites.includes(id)
-            ? state.favorites.filter((fid) => fid !== id)
-            : [...state.favorites, id];
-            
-          // Sync to DB
-          const { syncUserStateToDB } = require('../lib/supabase');
-          const { useAuthStore } = require('./authStore');
+      toggleFavorite: async (id) => {
+        const currentFavorites = get().favorites;
+        const nextFavorites = currentFavorites.includes(id)
+          ? currentFavorites.filter((fid) => fid !== id)
+          : [...currentFavorites, id];
+        
+        // Update local state immediately for snappy UI
+        set({ favorites: nextFavorites });
+          
+        // Sync to DB asynchronously
+        try {
+          const { syncUserStateToDB } = await import('../lib/supabase');
+          const { useAuthStore } = await import('./authStore');
           const userId = useAuthStore.getState().user?.id;
           if (userId) {
-            syncUserStateToDB(userId, { favorites: nextFavorites });
+            await syncUserStateToDB(userId, { favorites: nextFavorites });
           }
-          
-          return { favorites: nextFavorites };
-        });
+        } catch (error) {
+          console.error("Failed to sync favorites to cloud", error);
+        }
       },
 
       setFavorites: (favorites) => set({ favorites }),

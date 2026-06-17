@@ -192,8 +192,8 @@ export const useAdminStore = create<AdminState>()(
       studentName: app.studentName || 'Unknown Student',
       studentEmail: app.studentEmail || '',
       studentPhone: app.studentPhone || '',
-      collegeId: app.collegeId || '',
-      collegeName: app.collegeName || '',
+      collegeId: app.collegeId || 'walk-in',
+      collegeName: app.collegeName || 'Walk-in Registration',
       course: app.course || '',
       studentDob: app.studentDob || '',
       studentGender: app.studentGender || '',
@@ -205,17 +205,39 @@ export const useAdminStore = create<AdminState>()(
       counselorId: app.counselorId,
       assignedCounselorName: app.assignedCounselorName,
       progress: {
-        currentStage: 'Application Received',
         step: 1,
-        totalSteps: 5
+        totalSteps: 5,
+        currentStage: 'Application Received'
       }
     };
     
     if (isSupabaseConfigured()) {
+      const { getUserByEmail, createUser } = await import('../lib/supabase');
+      let dbUser = null;
+      if (app.studentEmail) {
+        dbUser = await getUserByEmail(app.studentEmail);
+        if (!dbUser) {
+          dbUser = await createUser({
+            name: app.studentName || 'Unknown Student',
+            email: app.studentEmail,
+            role: 'student',
+            phone: app.studentPhone
+          });
+        }
+      }
+      if (dbUser) {
+        newApp.studentId = dbUser.id;
+      }
+      
       const dbApp = await addApplicationToDB(newApp);
       if (dbApp) {
         newApp = dbApp;
       }
+      
+      // Refresh students list
+      const { fetchStudentsFromDB } = await import('../lib/supabase');
+      const students = await fetchStudentsFromDB();
+      set({ students });
     }
     
     set(state => ({ applications: [newApp, ...state.applications] }));

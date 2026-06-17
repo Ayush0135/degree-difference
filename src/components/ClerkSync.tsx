@@ -39,12 +39,14 @@ export default function ClerkSync() {
             id: dbUser.id,
             name: dbUser.name,
             email: dbUser.email,
-            role: dbUser.role as any
+            role: dbUser.role as any,
+            phone: dbUser.phone,
+            avatar: dbUser.avatar
           });
 
           // Restore User State from DB
-          const { fetchUserStateFromDB } = require('../lib/supabase');
-          const { useCollegeStore } = require('../store/collegeStore');
+          const { fetchUserStateFromDB } = await import('../lib/supabase');
+          const { useCollegeStore } = await import('../store/collegeStore');
           const stateData = await fetchUserStateFromDB(dbUser.id);
           if (stateData && stateData.favorites) {
             useCollegeStore.getState().setFavorites(stateData.favorites);
