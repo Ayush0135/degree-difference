@@ -6,7 +6,8 @@ import { useAdminStore } from '../store/adminStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SignInButton } from '@clerk/clerk-react';
 import type { User as UserType } from '../types';
-import { getUserByEmail, createUser } from '../lib/supabase';
+import { getUserByEmail, createUser, fetchUserStateFromDB } from '../lib/supabase';
+import { useCollegeStore } from '../store/collegeStore';
 
 export default function Login() {
   const [name, setName] = useState('');
@@ -172,8 +173,6 @@ export default function Login() {
         login(user);
         
         // Restore User State from DB
-        const { fetchUserStateFromDB } = await import('../lib/supabase');
-        const { useCollegeStore } = await import('../store/collegeStore');
         const stateData = await fetchUserStateFromDB(user.id);
         if (stateData && stateData.favorites) {
           useCollegeStore.getState().setFavorites(stateData.favorites);

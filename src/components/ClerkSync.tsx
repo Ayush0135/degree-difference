@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useAuthStore } from '../store/authStore';
-import { getUserByEmail, createUser } from '../lib/supabase';
+import { useCollegeStore } from '../store/collegeStore';
+import { getUserByEmail, fetchUserStateFromDB, createUser } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 export default function ClerkSync() {
@@ -45,7 +46,7 @@ export default function ClerkSync() {
           });
 
           // Restore User State from DB
-          const { fetchUserStateFromDB } = await import('../lib/supabase');
+          
           const { useCollegeStore } = await import('../store/collegeStore');
           const stateData = await fetchUserStateFromDB(dbUser.id);
           if (stateData && stateData.favorites) {

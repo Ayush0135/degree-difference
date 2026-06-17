@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useAuthStore } from './authStore';
 import type { College } from '../types';
 import { 
   fetchColleges as fetchCollegesFromDB, 
   addCollegeToDB, 
   deleteCollegeFromDB,
-  isSupabaseConfigured 
+  isSupabaseConfigured, syncUserStateToDB 
 } from '../lib/supabase';
 import { mockColleges } from '../data/mockData';
 
@@ -39,7 +40,7 @@ export const useCollegeStore = create<CollegeState>()(
         set({ isLoading: true, error: null });
         
         try {
-          if (isSupabaseConfigured()) {
+          if (isSupabaseConfigured, syncUserStateToDB()) {
             const dbColleges = await fetchCollegesFromDB();
             
             if (dbColleges.length > 0) {
@@ -134,7 +135,7 @@ export const useCollegeStore = create<CollegeState>()(
         set({ isLoading: true, error: null });
         
         try {
-          if (isSupabaseConfigured()) {
+          if (isSupabaseConfigured, syncUserStateToDB()) {
             const success = await deleteCollegeFromDB(id);
             
             if (success) {
@@ -168,7 +169,7 @@ export const useCollegeStore = create<CollegeState>()(
           
         // Sync to DB asynchronously
         try {
-          const { syncUserStateToDB } = await import('../lib/supabase');
+          
           const { useAuthStore } = await import('./authStore');
           const userId = useAuthStore.getState().user?.id;
           if (userId) {

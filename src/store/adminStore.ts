@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Application, Query, CounselorApplication, Counselor, User } from '../types';
-import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB } from '../lib/supabase';
+import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB, updateCounselorFakeAdmissionsInDB, updatePlatformSettings, supabase, getUserByEmail } from '../lib/supabase';
 import { mockApplications, mockQueries, mockCounselors } from '../data/mockData';
 
 interface AdminState {
@@ -75,7 +75,7 @@ export const useAdminStore = create<AdminState>()(
         const localCounselors = get().counselors;
         if (dbCounselors.length === 0 && localCounselors.length > 0) {
           console.log('Syncing local counselors to DB...');
-          const { createUser } = await import('../lib/supabase');
+          
           for (const c of localCounselors) {
             await createUser({ name: c.name, email: c.email, role: 'counselor', password: c.password });
           }
@@ -98,7 +98,7 @@ export const useAdminStore = create<AdminState>()(
 
   setupRealtime: async () => {
     if (!isSupabaseConfigured()) return;
-    const { supabase } = await import('../lib/supabase');
+    
     if (!supabase) return;
 
     const channelTopic = 'realtime:schema-db-changes';
@@ -212,7 +212,7 @@ export const useAdminStore = create<AdminState>()(
     };
     
     if (isSupabaseConfigured()) {
-      const { getUserByEmail, createUser } = await import('../lib/supabase');
+      
       let dbUser = null;
       if (app.studentEmail) {
         dbUser = await getUserByEmail(app.studentEmail);
@@ -235,7 +235,7 @@ export const useAdminStore = create<AdminState>()(
       }
       
       // Refresh students list
-      const { fetchStudentsFromDB } = await import('../lib/supabase');
+      
       const students = await fetchStudentsFromDB();
       set({ students });
     }
@@ -322,7 +322,7 @@ export const useAdminStore = create<AdminState>()(
 
   updateCounselorFakeAdmissions: async (counselorId: string, count: number) => {
     if (isSupabaseConfigured()) {
-      const { updateCounselorFakeAdmissionsInDB } = await import('../lib/supabase');
+      
       await updateCounselorFakeAdmissionsInDB(counselorId, count);
     }
     set(state => ({
@@ -389,7 +389,7 @@ export const useAdminStore = create<AdminState>()(
 
   updateMarqueeOffer: async (offer: string) => {
     if (isSupabaseConfigured()) {
-      const { updatePlatformSettings } = await import('../lib/supabase');
+      
       await updatePlatformSettings('counselor_marquee_offer', offer);
     }
     set({ marqueeOffer: offer });
