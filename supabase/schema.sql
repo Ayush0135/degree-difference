@@ -50,11 +50,20 @@ CREATE TABLE IF NOT EXISTS applications (
   college_id UUID REFERENCES colleges(id) ON DELETE CASCADE,
   college_name TEXT NOT NULL,
   course TEXT NOT NULL,
+  student_dob TEXT,
+  student_gender TEXT,
+  student_city TEXT,
+  high_school_marks TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'under_review', 'approved', 'rejected', 'counseling')),
   applied_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   documents TEXT[] DEFAULT '{}',
   counselor_id TEXT,
+  assigned_counselor_name TEXT,
   counselor_notes TEXT,
+  scholarship_amount NUMERIC DEFAULT 0,
+  scholarship_details TEXT,
+  counselor_incentive NUMERIC DEFAULT 0,
+  progress JSONB DEFAULT '{"step": 1, "totalSteps": 5, "currentStage": "Application Received"}'::jsonb,
   progress_step INTEGER DEFAULT 1,
   progress_stage TEXT DEFAULT 'Application Received',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -92,16 +101,110 @@ CREATE TABLE IF NOT EXISTS favorites (
 );
 
 -- ==========================================
--- USERS TABLE (optional - for future auth)
+-- USERS TABLE
 -- ==========================================
 CREATE TABLE IF NOT EXISTS users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'counselor', 'admin')),
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'counselor', 'admin', 'subadmin')),
   phone TEXT,
   avatar TEXT,
+  password TEXT,
+  fake_admissions_count INTEGER DEFAULT 0,
+  specialization TEXT[] DEFAULT '{}',
+  assigned_students TEXT[] DEFAULT '{}',
+  total_admissions INTEGER DEFAULT 0,
+  real_admissions INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- COUNSELOR APPLICATIONS TABLE
+-- ==========================================
+CREATE TABLE IF NOT EXISTS counselor_applications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  gender TEXT NOT NULL,
+  dob TEXT NOT NULL,
+  aadhaar TEXT NOT NULL,
+  pan TEXT NOT NULL,
+  mobile TEXT NOT NULL,
+  alt_mobile TEXT,
+  email TEXT NOT NULL,
+  whatsapp TEXT NOT NULL,
+  address TEXT NOT NULL,
+  state TEXT NOT NULL,
+  city TEXT NOT NULL,
+  pincode TEXT NOT NULL,
+  org_name TEXT,
+  designation TEXT NOT NULL,
+  experience TEXT NOT NULL,
+  specialization TEXT NOT NULL,
+  students_counseled TEXT,
+  acc_holder TEXT NOT NULL,
+  bank_name TEXT NOT NULL,
+  acc_number TEXT NOT NULL,
+  ifsc TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- COUNSELOR TASKS TABLE
+-- ==========================================
+CREATE TABLE IF NOT EXISTS counselor_tasks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  counselor_id TEXT NOT NULL,
+  task_text TEXT NOT NULL,
+  due_date TIMESTAMP WITH TIME ZONE,
+  is_completed BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- APPLICATION NOTES TABLE
+-- ==========================================
+CREATE TABLE IF NOT EXISTS application_notes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  application_id UUID REFERENCES applications(id) ON DELETE CASCADE,
+  sender_id TEXT NOT NULL,
+  sender_role TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- COUNSELOR BADGES TABLE
+-- ==========================================
+CREATE TABLE IF NOT EXISTS counselor_badges (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  counselor_id TEXT NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_name TEXT NOT NULL,
+  icon_url TEXT NOT NULL,
+  awarded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(counselor_id, badge_type)
+);
+
+-- ==========================================
+-- PLATFORM SETTINGS TABLE
+-- ==========================================
+CREATE TABLE IF NOT EXISTS platform_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- USER STATES TABLE
+-- ==========================================
+CREATE TABLE IF NOT EXISTS user_states (
+  user_id TEXT PRIMARY KEY,
+  state_data JSONB NOT NULL DEFAULT '{}'::jsonb,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -115,18 +218,24 @@ ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE queries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE counselor_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE counselor_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE application_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE counselor_badges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_states ENABLE ROW LEVEL SECURITY;
 
--- Colleges: Anyone can read, only authenticated users can write
+-- Colleges: Anyone can read, only admins can modify (simplified for demo)
 CREATE POLICY "Colleges are viewable by everyone" ON colleges
   FOR SELECT USING (true);
 
-CREATE POLICY "Colleges are insertable by authenticated users" ON colleges
+CREATE POLICY "Colleges are insertable by everyone" ON colleges
   FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Colleges are updatable by authenticated users" ON colleges
+CREATE POLICY "Colleges are updatable by everyone" ON colleges
   FOR UPDATE USING (true);
 
-CREATE POLICY "Colleges are deletable by authenticated users" ON colleges
+CREATE POLICY "Colleges are deletable by everyone" ON colleges
   FOR DELETE USING (true);
 
 -- Applications: Anyone can read and write (for demo purposes)
@@ -166,6 +275,59 @@ CREATE POLICY "Users are viewable by everyone" ON users
 CREATE POLICY "Users are insertable by everyone" ON users
   FOR INSERT WITH CHECK (true);
 
+CREATE POLICY "Users are updatable by everyone" ON users
+  FOR UPDATE USING (true);
+
+-- Counselor Applications
+CREATE POLICY "Counselor Apps are viewable by everyone" ON counselor_applications
+  FOR SELECT USING (true);
+
+CREATE POLICY "Counselor Apps are insertable by everyone" ON counselor_applications
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Counselor Apps are updatable by everyone" ON counselor_applications
+  FOR UPDATE USING (true);
+
+-- Counselor Tasks
+CREATE POLICY "Counselor Tasks are viewable by everyone" ON counselor_tasks
+  FOR SELECT USING (true);
+CREATE POLICY "Counselor Tasks are insertable by everyone" ON counselor_tasks
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Counselor Tasks are updatable by everyone" ON counselor_tasks
+  FOR UPDATE USING (true);
+CREATE POLICY "Counselor Tasks are deletable by everyone" ON counselor_tasks
+  FOR DELETE USING (true);
+
+-- Application Notes
+CREATE POLICY "Application Notes are viewable by everyone" ON application_notes
+  FOR SELECT USING (true);
+CREATE POLICY "Application Notes are insertable by everyone" ON application_notes
+  FOR INSERT WITH CHECK (true);
+
+-- Counselor Badges
+CREATE POLICY "Counselor Badges are viewable by everyone" ON counselor_badges
+  FOR SELECT USING (true);
+CREATE POLICY "Counselor Badges are insertable by everyone" ON counselor_badges
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Counselor Badges are updatable by everyone" ON counselor_badges
+  FOR UPDATE USING (true);
+
+-- Platform Settings
+CREATE POLICY "Platform Settings are viewable by everyone" ON platform_settings
+  FOR SELECT USING (true);
+CREATE POLICY "Platform Settings are insertable by everyone" ON platform_settings
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Platform Settings are updatable by everyone" ON platform_settings
+  FOR UPDATE USING (true);
+
+-- User States
+CREATE POLICY "User States are viewable by everyone" ON user_states
+  FOR SELECT USING (true);
+CREATE POLICY "User States are insertable by everyone" ON user_states
+  FOR INSERT WITH CHECK (true);
+CREATE POLICY "User States are updatable by everyone" ON user_states
+  FOR UPDATE USING (true);
+
 -- ==========================================
 -- INDEXES FOR PERFORMANCE
 -- ==========================================
@@ -177,165 +339,3 @@ CREATE INDEX IF NOT EXISTS idx_applications_student ON applications(student_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 CREATE INDEX IF NOT EXISTS idx_queries_status ON queries(status);
 CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
-
--- ==========================================
--- SEED DATA (Sample Colleges)
--- ==========================================
-INSERT INTO colleges (name, location, city, state, type, affiliation, established, rating, total_seats, courses_offered, facilities, fees_min, fees_max, image, description, nirf_rank, accreditation, avg_package, highest_package, placement_rate)
-VALUES
-  (
-    'Indian Institute of Technology Delhi',
-    'Hauz Khas, New Delhi',
-    'New Delhi',
-    'Delhi',
-    'Engineering',
-    'Autonomous',
-    1961,
-    4.8,
-    2500,
-    ARRAY['B.Tech', 'M.Tech', 'MBA', 'PhD'],
-    ARRAY['Library', 'Hostel', 'Sports Complex', 'Labs', 'Cafeteria', 'Wi-Fi'],
-    200000,
-    900000,
-    'https://images.unsplash.com/photo-1562774053-701939374585?w=800',
-    'Premier engineering institution offering world-class education and research opportunities.',
-    1,
-    ARRAY['NAAC A++', 'NBA'],
-    1800000,
-    12000000,
-    95.0
-  ),
-  (
-    'All India Institute of Medical Sciences',
-    'Ansari Nagar, New Delhi',
-    'New Delhi',
-    'Delhi',
-    'Medical',
-    'Autonomous',
-    1956,
-    4.9,
-    1200,
-    ARRAY['MBBS', 'MD', 'MS', 'DM', 'MCh'],
-    ARRAY['Hospital', 'Library', 'Hostel', 'Research Centers', 'Labs'],
-    50000,
-    300000,
-    'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=800',
-    'India''s premier medical institution with excellent research and clinical facilities.',
-    1,
-    ARRAY['NAAC A++', 'MCI'],
-    1200000,
-    3000000,
-    100.0
-  ),
-  (
-    'Indian Institute of Management Ahmedabad',
-    'Vastrapur, Ahmedabad',
-    'Ahmedabad',
-    'Gujarat',
-    'Business',
-    'Autonomous',
-    1961,
-    4.7,
-    800,
-    ARRAY['MBA', 'PGDM', 'PhD', 'Executive MBA'],
-    ARRAY['Library', 'Hostel', 'Sports', 'Auditorium', 'Computer Labs'],
-    2500000,
-    3300000,
-    'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800',
-    'Top business school in India known for excellent management education.',
-    1,
-    ARRAY['NAAC A++', 'AACSB', 'EQUIS'],
-    3300000,
-    7000000,
-    100.0
-  ),
-  (
-    'National Law School of India University',
-    'Nagarbhavi, Bangalore',
-    'Bangalore',
-    'Karnataka',
-    'Law',
-    'Autonomous',
-    1987,
-    4.6,
-    500,
-    ARRAY['BA LLB', 'LLM', 'PhD'],
-    ARRAY['Library', 'Hostel', 'Moot Court', 'Computer Labs', 'Sports'],
-    150000,
-    400000,
-    'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800',
-    'India''s premier law school with excellent academic programs and faculty.',
-    1,
-    ARRAY['NAAC A++', 'BCI'],
-    1500000,
-    4500000,
-    92.0
-  ),
-  (
-    'St. Stephen''s College',
-    'University Enclave, Delhi',
-    'New Delhi',
-    'Delhi',
-    'Arts',
-    'University of Delhi',
-    1881,
-    4.5,
-    1000,
-    ARRAY['BA', 'B.Sc', 'MA', 'M.Sc'],
-    ARRAY['Library', 'Hostel', 'Chapel', 'Sports', 'Canteen'],
-    30000,
-    100000,
-    'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800',
-    'One of India''s most prestigious liberal arts colleges.',
-    3,
-    ARRAY['NAAC A++'],
-    800000,
-    2500000,
-    85.0
-  ),
-  (
-    'Birla Institute of Technology and Science',
-    'Pilani, Rajasthan',
-    'Pilani',
-    'Rajasthan',
-    'Engineering',
-    'Deemed University',
-    1964,
-    4.7,
-    3000,
-    ARRAY['B.E', 'M.E', 'MBA', 'MSc', 'PhD'],
-    ARRAY['Library', 'Hostel', 'Labs', 'Sports Complex', 'Wi-Fi Campus'],
-    400000,
-    500000,
-    'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?w=800',
-    'Premier deemed university known for quality education in engineering and sciences.',
-    25,
-    ARRAY['NAAC A', 'NBA'],
-    1500000,
-    6000000,
-    90.0
-  )
-ON CONFLICT DO NOTHING;
-
--- ==========================================
--- TRIGGER FOR UPDATED_AT
--- ==========================================
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_colleges_updated_at BEFORE UPDATE ON colleges
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_applications_updated_at BEFORE UPDATE ON applications
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_queries_updated_at BEFORE UPDATE ON queries
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
