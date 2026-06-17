@@ -28,7 +28,7 @@ export default function Footer() {
             <ul className="space-y-4">
               {[
                 { name: 'Browse Colleges', path: '/colleges' },
-                { name: 'Become a Counselor', path: '/counselor-registration' },
+                { name: 'Register as a Counselor', path: '/counselor-registration' },
                 { name: 'Student Portal', path: '/dashboard' },
               ].map((link) => (
                 <li key={link.name}>
