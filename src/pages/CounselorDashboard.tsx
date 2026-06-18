@@ -61,7 +61,7 @@ export default function CounselorDashboard() {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(registrationUrl)}`;
 
   const {
-    applications, initializeData, setupRealtime,
+    applications, initializeData, setupRealtime, queries,
     manuallyRegisterStudent, addQuery, counselors, marqueeOffer,
     updateScholarship, advanceApplicationStep,
   } = useAdminStore();
@@ -159,7 +159,9 @@ export default function CounselorDashboard() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     addQuery({
+      studentId: user?.id,
       studentName: `Counselor: ${counselorName}`,
+      studentEmail: user?.email || 'counselor@example.com',
       subject: fd.get('subject') as string,
       message: fd.get('message') as string,
     });
@@ -634,19 +636,45 @@ export default function CounselorDashboard() {
 
       {/* ── Message Modal ── */}
       <Sheet open={showMsgModal} onClose={() => setShowMsgModal(false)} title="Message Administration">
-        <form onSubmit={handleSendMsg} className="p-5 space-y-4">
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Subject</label>
-            <input required name="subject" className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors" />
-          </div>
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Message</label>
-            <textarea required name="message" rows={5} className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 resize-none transition-colors" />
-          </div>
-          <button type="submit" className="w-full text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 py-3 rounded-xl active:scale-95 transition-all">
-            Send Message
-          </button>
-        </form>
+        <div className="p-5 overflow-y-auto max-h-[80vh]">
+          <form onSubmit={handleSendMsg} className="space-y-4 mb-6">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Subject</label>
+              <input required name="subject" className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Message</label>
+              <textarea required name="message" rows={3} className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 resize-none transition-colors" />
+            </div>
+            <button type="submit" className="w-full text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 py-3 rounded-xl active:scale-95 transition-all">
+              Send Message
+            </button>
+          </form>
+
+          {queries.filter(q => q.studentId === user?.id).length > 0 && (
+            <div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Past Messages</h3>
+              <div className="space-y-3">
+                {queries.filter(q => q.studentId === user?.id).map(q => (
+                  <div key={q.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div className="flex justify-between mb-1">
+                      <p className="text-xs font-bold text-slate-800">{q.subject}</p>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${q.status === 'resolved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {q.status}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mb-2">{q.message}</p>
+                    {q.response && (
+                      <div className="bg-white border border-emerald-100 rounded-lg p-2">
+                        <p className="text-[10px] text-emerald-800"><strong>Admin Reply: </strong>{q.response}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </Sheet>
 
       {/* ── QR Modal ── */}

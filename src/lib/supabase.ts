@@ -376,7 +376,23 @@ export async function addQueryToDB(q: Omit<Query, 'id'>): Promise<Query | null> 
 export async function fetchApplications(): Promise<Application[]> { return []; }
 export async function updateApplicationInDB(_1: string, _2: any) { return false; }
 export async function fetchQueries(): Promise<Query[]> { return []; }
-export async function respondToQueryInDB(_1: string, _2: string, _3: string) { return false; }
+export async function respondToQueryInDB(id: string, response: string, responderName: string = 'Admin'): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('queries')
+    .update({ 
+      response, 
+      responded_by: responderName, 
+      status: 'resolved', 
+      responded_date: new Date().toISOString() 
+    })
+    .eq('id', id);
+  if (error) {
+    console.error('Error responding to query:', error);
+    return false;
+  }
+  return true;
+}
 export async function fetchFavorites(_: string): Promise<string[]> { return []; }
 export async function addFavorite(_1: string, _2: string) { return false; }
 export async function removeFavorite(_1: string, _2: string) { return false; }

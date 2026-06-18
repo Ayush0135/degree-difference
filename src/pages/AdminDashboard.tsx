@@ -71,7 +71,7 @@ export default function AdminDashboard() {
     assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors,
     counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions,
     subadmins, addSubadmin, removeSubadmin, marqueeOffer: storeMarquee, updateMarqueeOffer,
-    setupRealtime, students,
+    setupRealtime, students, respondToQuery,
   } = useAdminStore();
   const { colleges, initializeColleges, deleteCollege } = useCollegeStore();
   const dbConnected = isSupabaseConfigured();
@@ -82,6 +82,8 @@ export default function AdminDashboard() {
   const [chatAppId, setChatAppId] = useState<{ id: string; name: string } | null>(null);
   const [marqueeOffer, setMarqueeOffer] = useState(storeMarquee);
   const [isSavingMarquee, setIsSavingMarquee] = useState(false);
+  const [respondingQueryId, setRespondingQueryId] = useState<string | null>(null);
+  const [queryResponseText, setQueryResponseText] = useState('');
 
   useEffect(() => { setMarqueeOffer(storeMarquee); }, [storeMarquee]);
 
@@ -107,6 +109,13 @@ export default function AdminDashboard() {
     });
     setTab('applications');
     (e.target as HTMLFormElement).reset();
+  };
+
+  const handleRespondToQuery = async (queryId: string) => {
+    if (!queryResponseText.trim()) return;
+    await respondToQuery(queryId, queryResponseText);
+    setRespondingQueryId(null);
+    setQueryResponseText('');
   };
 
   const handleAddCounselor = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -570,7 +579,23 @@ export default function AdminDashboard() {
                     <p className="text-[12px] text-slate-600 bg-slate-50 rounded-lg px-3 py-2 mb-3">{q.message}</p>
                     {q.response
                       ? <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3"><p className="text-xs text-emerald-800"><strong>Response: </strong>{q.response}</p></div>
-                      : <button className="text-xs font-semibold text-white px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 active:scale-95 transition-all">Respond</button>
+                      : respondingQueryId === q.id ? (
+                          <div className="flex flex-col gap-2 mt-2">
+                            <textarea
+                              className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-teal-500 resize-none bg-slate-50"
+                              rows={3}
+                              placeholder="Type your response here..."
+                              value={queryResponseText}
+                              onChange={(e) => setQueryResponseText(e.target.value)}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => setRespondingQueryId(null)} className="text-xs font-semibold text-slate-500 px-3 py-1.5 hover:bg-slate-100 rounded-lg">Cancel</button>
+                              <button onClick={() => handleRespondToQuery(q.id)} disabled={!queryResponseText.trim()} className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 transition-all">Submit Response</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button onClick={() => setRespondingQueryId(q.id)} className="text-xs font-semibold text-white px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 active:scale-95 transition-all">Respond</button>
+                        )
                     }
                   </div>
                 ))}

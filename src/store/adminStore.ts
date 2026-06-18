@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Application, Query, CounselorApplication, Counselor, User } from '../types';
-import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB, updateCounselorFakeAdmissionsInDB, updatePlatformSettings, fetchPlatformSettings, supabase, getUserByEmail } from '../lib/supabase';
+import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB, updateCounselorFakeAdmissionsInDB, updatePlatformSettings, fetchPlatformSettings, supabase, getUserByEmail, addQueryToDB, respondToQueryInDB } from '../lib/supabase';
 import { mockApplications, mockQueries, mockCounselors } from '../data/mockData';
 
 interface AdminState {
@@ -24,7 +24,8 @@ interface AdminState {
   advanceApplicationStep: (id: string) => Promise<void>;
   addCounselor: (counselor: Partial<Counselor>) => void;
   updateCounselorFakeAdmissions: (counselorId: string, count: number) => Promise<void>;
-  addQuery: (query: Partial<Query>) => void;
+  addQuery: (query: Partial<Query>) => Promise<void>;
+  respondToQuery: (id: string, response: string) => Promise<void>;
   approveCounselorApp: (id: string) => Promise<boolean>;
   addSubadmin: (email: string) => Promise<void>;
   removeSubadmin: (id: string) => Promise<void>;
@@ -138,6 +139,20 @@ export const useAdminStore = create<AdminState>()(
 
   updateApplicationStatus: async (id, status) => {
     try {
+      const currentApp = get().applications.find(a => a.id === id);
+      if (status === 'approved' && currentApp?.status !== 'approved') {
+        fetch('/api/send-admission-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: currentApp.studentEmail,
+            name: currentApp.studentName,
+            collegeName: currentApp.collegeName,
+            course: currentApp.course,
+          })
+        }).catch(err => console.error('Failed to send confirmation email', err));
+      }
+
       if (isSupabaseConfigured()) {
         const success = await updateApplicationStatusInDB(id, status);
         if (success) {
@@ -270,6 +285,20 @@ export const useAdminStore = create<AdminState>()(
   advanceApplicationStep: async (id) => {
     const stages = ['Application Received', 'Document Verification', 'Eligibility Check', 'Counseling Round', 'Final Approval'];
     
+    const currentApp = get().applications.find(a => a.id === id);
+    if (currentApp && currentApp.progress.step + 1 === 5 && currentApp.status !== 'approved') {
+      fetch('/api/send-admission-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: currentApp.studentEmail,
+          name: currentApp.studentName,
+          collegeName: currentApp.collegeName,
+          course: currentApp.course,
+        })
+      }).catch(err => console.error('Failed to send confirmation email', err));
+    }
+
     set(state => {
       const app = state.applications.find(a => a.id === id);
       if (!app || app.progress.step >= app.progress.totalSteps) return state;
@@ -338,8 +367,8 @@ export const useAdminStore = create<AdminState>()(
     }));
   },
 
-  addQuery: (queryData) => {
-    const newQuery: Query = {
+  addQuery: async (queryData) => {
+    let newQuery: Query = {
       id: `query-${Date.now()}`,
       studentId: queryData.studentId || `student-${Date.now()}`,
       studentName: queryData.studentName || 'Counselor Query',
@@ -349,7 +378,24 @@ export const useAdminStore = create<AdminState>()(
       status: 'open',
       createdDate: new Date().toISOString()
     };
+    
+    if (isSupabaseConfigured()) {
+      const dbQuery = await addQueryToDB(newQuery);
+      if (dbQuery) newQuery = dbQuery;
+    }
+    
     set(state => ({ queries: [newQuery, ...state.queries] }));
+  },
+
+  respondToQuery: async (id, response) => {
+    if (isSupabaseConfigured()) {
+      await respondToQueryInDB(id, response);
+    }
+    set(state => ({
+      queries: state.queries.map(q => 
+        q.id === id ? { ...q, response, status: 'resolved', respondedDate: new Date().toISOString() } : q
+      )
+    }));
   },
 
   approveCounselorApp: async (id) => {
