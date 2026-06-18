@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /counselor
+
+Sitemap: https://www.degreedifference.com/sitemap.xml

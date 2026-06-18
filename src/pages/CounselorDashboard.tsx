@@ -4,14 +4,15 @@ import {
   Users, FileText, CheckCircle, TrendingUp, X, Award, MessageSquare,
   Upload, Plus, Clock, Camera, Save, Home, DollarSign, UserCircle,
   UserPlus, QrCode, ChevronRight, Menu, GraduationCap, Copy, Check,
-  AlertCircle, ArrowUpRight, Circle
+  AlertCircle, ArrowUpRight, Circle, Star, FolderHeart
 } from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAuthStore } from '../store/authStore';
 import {
   uploadAvatar, updateUserProfile, fetchCounselorTasks,
-  addCounselorTask, updateCounselorTask, deleteCounselorTask, uploadDocumentToDB
+  addCounselorTask, updateCounselorTask, deleteCounselorTask, uploadDocumentToDB,
+  fetchCounselorBadges
 } from '../lib/supabase';
 import ApplicationChat from '../components/ApplicationChat';
 
@@ -30,7 +31,7 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-type View = 'home' | 'students' | 'earnings' | 'profile';
+type View = 'home' | 'students' | 'earnings' | 'profile' | 'resources';
 
 export default function CounselorDashboard() {
   const [view, setView] = useState<View>('home');
@@ -72,13 +73,24 @@ export default function CounselorDashboard() {
   }, []);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchCounselorTasks(user.id).then(setTasks);
-      import('../lib/supabase').then(s => s.fetchCounselorBadges?.(user.id)?.then(setBadges));
-    }
+    const ld = async () => {
+      if (user?.id) {
+        fetchCounselorTasks(user.id).then(setTasks);
+        const bdg = await fetchCounselorBadges(user.id);
+        setBadges(bdg || []);
+      }
+    };
+    ld();
   }, [user?.id]);
 
   const myApps = applications.filter(a => a.counselorId === counselorId);
+  // Sort: Hot leads first, then by date descending
+  myApps.sort((a, b) => {
+    if (a.isHotLead && !b.isHotLead) return -1;
+    if (!a.isHotLead && b.isHotLead) return 1;
+    return new Date(b.appliedDate || 0).getTime() - new Date(a.appliedDate || 0).getTime();
+  });
+
   const stats = {
     total: myApps.length,
     pending: myApps.filter(a => a.status === 'pending' || a.status === 'under_review').length,
@@ -179,6 +191,7 @@ export default function CounselorDashboard() {
     { id: 'home' as View, icon: Home, label: 'Home' },
     { id: 'students' as View, icon: Users, label: 'Students' },
     { id: 'earnings' as View, icon: DollarSign, label: 'Earnings' },
+    { id: 'resources' as View, icon: FolderHeart, label: 'Resources' },
     { id: 'profile' as View, icon: UserCircle, label: 'Profile' },
   ];
 
@@ -387,9 +400,14 @@ export default function CounselorDashboard() {
                   <div key={a.id} className="bg-white border border-slate-200/70 rounded-xl overflow-hidden">
                     <button className="w-full text-left px-4 py-3.5" onClick={() => setSelId(sel === a.id ? null : a.id)}>
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-900 truncate">{a.studentName}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{a.collegeName} · {a.course}</p>
+                        <div className="min-w-0 flex items-center gap-1.5 flex-1">
+                          <button onClick={(e) => { e.stopPropagation(); toggleHotLead(a.id); }} className="active:scale-90 transition-all shrink-0">
+                            <Star className={`h-4 w-4 ${a.isHotLead ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                          </button>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-900 truncate">{a.studentName}</p>
+                            <p className="text-[11px] text-slate-400 truncate">{a.collegeName} · {a.course}</p>
+                          </div>
                         </div>
                         <StatusPill status={a.status} />
                       </div>
@@ -495,6 +513,34 @@ export default function CounselorDashboard() {
                   </div>
                 ))}
               </div>
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="flex justify-between items-end mb-2">
+                  <p className="text-xs font-bold text-white">Bonus Target (10 Admissions)</p>
+                  <p className="text-xs text-amber-400 font-bold">{conversions}/10</p>
+                </div>
+                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-400 rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, (conversions / 10) * 100)}%` }} />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Only {Math.max(0, 10 - conversions)} more admissions to unlock a ₹10,000 bonus!</p>
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="bg-white border border-slate-200/70 rounded-xl overflow-hidden mb-4 shadow-sm">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5"><Award className="h-4 w-4 text-amber-500" /> Top Counselors</p>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {counselors.sort((a, b) => (b.totalAdmissions || 0) - (a.totalAdmissions || 0)).slice(0, 3).map((c, idx) => (
+                  <div key={c.id} className="flex items-center px-4 py-3 gap-3">
+                    <span className="text-base w-5 shrink-0 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
+                    <p className="text-sm font-semibold text-slate-800 flex-1 truncate">
+                      {c.name} {c.id === user?.id && <span className="text-[10px] text-teal-600 font-bold ml-1">(You)</span>}
+                    </p>
+                    <p className="text-sm font-black text-teal-600">{c.totalAdmissions || 0} <span className="text-[10px] font-semibold text-slate-400">adm</span></p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="bg-white border border-slate-200/70 rounded-xl overflow-hidden">
@@ -547,6 +593,23 @@ export default function CounselorDashboard() {
               <p className="text-xs text-slate-400">{user?.email}</p>
             </div>
 
+            {/* Badges card */}
+            <div className="bg-white border border-slate-200/70 rounded-xl p-5 mb-4 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2"><Award className="h-4 w-4 text-emerald-500"/> My Badges</h3>
+              {badges.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {badges.map(b => (
+                    <div key={b.id} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                      <span className="text-base">{b.icon_url === 'star' ? '⭐' : b.icon_url === 'medal' ? '🏅' : '👑'}</span>
+                      <span className="text-[11px] font-bold text-amber-800">{b.badge_name}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">Complete your first admission to earn a badge!</p>
+              )}
+            </div>
+
             {/* Edit form */}
             <div className="bg-white border border-slate-200/70 rounded-xl p-5 space-y-4">
               <h3 className="text-sm font-bold text-slate-900">Edit Information</h3>
@@ -571,7 +634,6 @@ export default function CounselorDashboard() {
               </button>
             </div>
 
-            {/* QR shortcut */}
             <button onClick={() => setShowQR(true)}
               className="w-full bg-white border border-slate-200/70 rounded-xl px-4 py-3.5 flex items-center justify-between hover:shadow-sm active:scale-[0.99] transition-all">
               <div className="flex items-center gap-3">
@@ -585,6 +647,58 @@ export default function CounselorDashboard() {
               </div>
               <ChevronRight className="h-4 w-4 text-slate-300" />
             </button>
+          </motion.div>
+        )}
+
+        {/* ── RESOURCES ── */}
+        {view === 'resources' && (
+          <motion.div key="resources" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 max-w-lg mx-auto pb-24">
+            <div className="mb-5">
+              <h2 className="text-base font-black text-slate-900">Marketing & Resources</h2>
+              <p className="text-[11px] text-slate-400">Materials to help you close more admissions</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-teal-50 border border-teal-100 rounded-2xl p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <FolderHeart className="w-24 h-24 text-teal-900" />
+                </div>
+                <h3 className="font-bold text-teal-900 relative z-10 mb-1">WhatsApp Templates</h3>
+                <p className="text-xs text-teal-700 relative z-10 mb-4">Copy these proven messages and send them to your leads!</p>
+                
+                <div className="space-y-3 relative z-10">
+                  {[
+                    { title: 'Intro Message', text: `Hi there! 👋 I am ${counselorName}, an admission counselor. Are you looking for top colleges this year? Let me help you get a confirmed seat + scholarship! Register here: ${registrationUrl}` },
+                    { title: 'Follow-up', text: `Hey! Just following up on your college admission process. We have a few seats left in top engineering colleges with amazing placement records. Call me to block yours! 🎓` }
+                  ].map((tpl, i) => (
+                    <div key={i} className="bg-white rounded-xl p-3 shadow-sm border border-teal-50/50">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{tpl.title}</p>
+                        <button onClick={() => { navigator.clipboard.writeText(tpl.text); alert('Copied!'); }} className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-lg">Copy</button>
+                      </div>
+                      <p className="text-xs text-slate-700 leading-relaxed">{tpl.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200/70 rounded-2xl p-5">
+                <h3 className="font-bold text-slate-900 mb-1">College Brochures</h3>
+                <p className="text-[11px] text-slate-400 mb-4">Download PDF brochures to share with parents and students.</p>
+                
+                <div className="space-y-2">
+                  {colleges.slice(0, 3).map(c => (
+                    <div key={c.id} className="flex items-center justify-between px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="h-4 w-4 text-rose-500 shrink-0" />
+                        <p className="text-xs font-semibold text-slate-700 truncate">{c.name} 2026.pdf</p>
+                      </div>
+                      <button className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg active:scale-95 shrink-0" onClick={() => alert('Brochure downloading...')}>Get</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

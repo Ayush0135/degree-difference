@@ -1,13 +1,13 @@
-import puppeteer from 'puppeteer';
-
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  
-  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-  page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
-  
-  await page.goto('http://localhost:5173');
-  await new Promise(r => setTimeout(r, 2000));
-  await browser.close();
-})();
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://zmsqbysmpxkqeoapxnbo.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inptc3FieXNtcHhrcWVvYXB4bmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxODE0NDAsImV4cCI6MjA5MTc1NzQ0MH0.iN_FeepWWIXZmv-ofgkdv3gAXali77yebxGdqjBe8pI';
+const supabase = createClient(supabaseUrl, supabaseKey);
+async function run() {
+  const { data: c } = await supabase.from('colleges').select('id');
+  const { data: s } = await supabase.from('scholarships').select('id');
+  console.log('Colleges:', c?.length);
+  console.log('Scholarships:', s?.length);
+}
+run();

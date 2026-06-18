@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { College, Application, Query, CounselorApplication } from '../types';
+import type { College, Application, Query, CounselorApplication, Scholarship } from '../types';
 
 const supabaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || '';
 const supabaseAnonKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || '';
@@ -114,6 +114,60 @@ function transformCollegeToDB(college: any): any {
     scholarships_available: college.scholarshipsAvailable,
     placement_review: college.placementReview,
     embedding: college.embedding || null,
+  };
+}
+
+// SCHOLARSHIPS
+export async function fetchScholarshipsFromDB(): Promise<Scholarship[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('scholarships').select('*').order('created_at', { ascending: false });
+  if (error) {
+    console.error('Error fetching scholarships:', error);
+    return [];
+  }
+  return (data || []).map(transformScholarshipFromDB);
+}
+
+export async function addScholarshipToDB(scholarship: Omit<Scholarship, 'id'> | Scholarship): Promise<Scholarship | null> {
+  if (!supabase) return null;
+  const payload = transformScholarshipToDB(scholarship);
+  
+  // Use upsert so we can use existing IDs from mockData
+  const { data, error } = await supabase.from('scholarships').upsert([payload], { onConflict: 'id' }).select().single();
+  if (error) {
+    console.error('Error adding scholarship:', error);
+    return null;
+  }
+  return transformScholarshipFromDB(data);
+}
+
+function transformScholarshipFromDB(data: any): Scholarship {
+  return {
+    id: data.id,
+    name: data.name,
+    provider: data.provider,
+    type: data.type as any,
+    amount: data.amount,
+    eligibility: data.eligibility,
+    deadline: data.deadline,
+    matchScore: data.match_score,
+    website: data.website,
+    inDepthDetails: data.in_depth_details
+  };
+}
+
+function transformScholarshipToDB(scholarship: any): any {
+  return {
+    id: scholarship.id || `schol-${Date.now()}`,
+    name: scholarship.name,
+    provider: scholarship.provider,
+    type: scholarship.type,
+    amount: scholarship.amount,
+    eligibility: scholarship.eligibility,
+    deadline: scholarship.deadline,
+    match_score: scholarship.matchScore,
+    website: scholarship.website,
+    in_depth_details: scholarship.inDepthDetails
   };
 }
 

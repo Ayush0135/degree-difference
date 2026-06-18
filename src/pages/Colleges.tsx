@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Filter, SlidersHorizontal, SearchX, Loader2 } from 'lucide-react';
+import { Filter, SlidersHorizontal, SearchX, Loader2, Scale, X, CheckCircle2 } from 'lucide-react';
 import CollegeCard from '../components/CollegeCard';
 import { useCollegeStore } from '../store/collegeStore';
 import { useSearchParams } from 'react-router-dom';
@@ -8,9 +8,10 @@ import Fuse from 'fuse.js';
 import SEO from '../components/SEO';
 
 export default function Colleges() {
-  const { colleges, isLoading, initializeColleges } = useCollegeStore();
+  const { colleges, isLoading, initializeColleges, compareList, clearCompare, toggleCompare } = useCollegeStore();
   const [searchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
   const [filters, setFilters] = useState({ search: searchParams.get('search') || '', type: searchParams.get('type') || '', location: '', minFees: 0, maxFees: 5000000, minRating: 0 });
   const [semanticMatchIds, setSemanticMatchIds] = useState<string[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -93,6 +94,8 @@ export default function Colleges() {
   }, [colleges, filters, semanticMatchIds]);
 
   const reset = () => setFilters({ search: '', type: '', location: '', minFees: 0, maxFees: 5000000, minRating: 0 });
+
+  const compareColleges = colleges.filter(c => compareList.includes(c.id));
 
   return (
     <>
@@ -196,6 +199,139 @@ export default function Colleges() {
         </div>
       </div>
     </motion.div>
+
+    {/* Floating Compare Bar */}
+    {compareList.length > 0 && (
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6"
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-teal-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
+            {compareList.length}
+          </div>
+          <div>
+            <p className="font-bold text-sm">Colleges Selected</p>
+            <p className="text-xs text-slate-300">Select up to 3</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 border-l border-slate-700 pl-6">
+          <button
+            onClick={() => setShowCompareModal(true)}
+            disabled={compareList.length < 2}
+            className="bg-white text-slate-900 px-5 py-2 rounded-xl font-bold text-sm hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <Scale className="w-4 h-4" />
+            Compare
+          </button>
+          <button
+            onClick={clearCompare}
+            className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </motion.div>
+    )}
+
+    {/* Compare Modal */}
+    {showCompareModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
+        >
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Scale className="w-5 h-5 text-teal-600" />
+              Compare Colleges
+            </h2>
+            <button
+              onClick={() => setShowCompareModal(false)}
+              className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="p-6 overflow-y-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {/* Feature column */}
+              <div className="hidden md:flex flex-col gap-8 pt-[220px] font-semibold text-slate-500 text-sm">
+                <div className="h-10 flex items-center">Institution Type</div>
+                <div className="h-10 flex items-center">Location</div>
+                <div className="h-10 flex items-center">Annual Fees</div>
+                <div className="h-10 flex items-center">NIRF Ranking</div>
+                <div className="h-10 flex items-center">Average Placement</div>
+                <div className="h-10 flex items-center">Highest Package</div>
+                <div className="flex-1 mt-4">Top Facilities</div>
+              </div>
+
+              {/* College columns */}
+              {compareColleges.map((c) => (
+                <div key={c.id} className="flex flex-col gap-8 relative">
+                  <button 
+                    onClick={() => {
+                      toggleCompare(c.id);
+                      if (compareList.length <= 2) setShowCompareModal(false);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full text-slate-400 hover:text-red-500 shadow-sm z-10"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="h-[200px] flex flex-col items-center text-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <img src={c.image} alt={c.name} className="w-20 h-20 rounded-full object-cover shadow-sm mb-3" />
+                    <h3 className="font-bold text-slate-900 text-sm leading-tight line-clamp-2 mb-1">{c.name}</h3>
+                    <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
+                      <Star className="w-3 h-3 fill-current" /> {c.rating}
+                    </div>
+                  </div>
+                  
+                  <div className="h-10 flex flex-col justify-center text-sm">
+                    <span className="md:hidden text-xs text-slate-400 font-semibold">Type</span>
+                    <span className="font-semibold text-slate-900">{c.type}</span>
+                  </div>
+                  <div className="h-10 flex flex-col justify-center text-sm">
+                    <span className="md:hidden text-xs text-slate-400 font-semibold">Location</span>
+                    <span className="text-slate-700 truncate">{c.city}, {c.state}</span>
+                  </div>
+                  <div className="h-10 flex flex-col justify-center text-sm">
+                    <span className="md:hidden text-xs text-slate-400 font-semibold">Annual Fees</span>
+                    <span className="font-bold text-teal-700">₹{(c.fees.min / 100000).toFixed(1)}L - ₹{(c.fees.max / 100000).toFixed(1)}L</span>
+                  </div>
+                  <div className="h-10 flex flex-col justify-center text-sm">
+                    <span className="md:hidden text-xs text-slate-400 font-semibold">NIRF</span>
+                    <span className="font-semibold text-slate-900">{c.nirf_rank ? `#${c.nirf_rank}` : 'N/A'}</span>
+                  </div>
+                  <div className="h-10 flex flex-col justify-center text-sm">
+                    <span className="md:hidden text-xs text-slate-400 font-semibold">Avg Placement</span>
+                    <span className="font-bold text-slate-900">{c.placements ? `₹${(c.placements.averagePackage / 100000).toFixed(1)}L` : 'N/A'}</span>
+                  </div>
+                  <div className="h-10 flex flex-col justify-center text-sm">
+                    <span className="md:hidden text-xs text-slate-400 font-semibold">High Package</span>
+                    <span className="font-bold text-slate-900">{c.placements ? `₹${(c.placements.highestPackage / 100000).toFixed(1)}L` : 'N/A'}</span>
+                  </div>
+                  <div className="flex-1 mt-4">
+                    <span className="md:hidden text-xs text-slate-400 font-semibold block mb-2">Facilities</span>
+                    <ul className="space-y-2">
+                      {c.facilities.slice(0, 4).map(f => (
+                        <li key={f} className="text-sm flex items-center gap-2 text-slate-700">
+                          <CheckCircle2 className="w-4 h-4 text-teal-500" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )}
     </>
   );
 }

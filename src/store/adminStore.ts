@@ -23,6 +23,7 @@ interface AdminState {
   assignIncentive: (id: string, amount: number) => Promise<void>;
   advanceApplicationStep: (id: string) => Promise<void>;
   submitDocumentLink: (id: string, link: string) => Promise<void>;
+  toggleHotLead: (id: string) => Promise<void>;
   addCounselor: (counselor: Partial<Counselor>) => void;
   updateCounselorFakeAdmissions: (counselorId: string, count: number) => Promise<void>;
   addQuery: (query: Partial<Query>) => Promise<void>;
@@ -289,6 +290,14 @@ export const useAdminStore = create<AdminState>()(
     set(state => ({
       applications: state.applications.map(app => 
         app.id === id ? { ...app, documentLink: link } : app
+      )
+    }));
+  },
+
+  toggleHotLead: async (id) => {
+    set(state => ({
+      applications: state.applications.map(app => 
+        app.id === id ? { ...app, isHotLead: !app.isHotLead } : app
       )
     }));
   },

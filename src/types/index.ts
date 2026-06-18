@@ -63,6 +63,7 @@ export interface Application {
     currentStage: string;
   };
   documentLink?: string;
+  isHotLead?: boolean;
 }
 
 export interface Query {

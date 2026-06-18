@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
-import { Award, ExternalLink, ChevronDown, Check, Building2, Landmark, Filter, Search, FileText, CheckCircle } from 'lucide-react';
-import { mockScholarships } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { Award, ExternalLink, ChevronDown, Check, Building2, Landmark, Filter, Search, FileText, CheckCircle, Loader2 } from 'lucide-react';
+import { useScholarshipStore } from '../store/scholarshipStore';
 import SEO from '../components/SEO';
 
 export default function Scholarships() {
@@ -9,12 +9,29 @@ export default function Scholarships() {
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filteredScholarships = mockScholarships.filter(s => {
+  const { scholarships, isLoading, isInitialized, initializeScholarships } = useScholarshipStore();
+
+  useEffect(() => {
+    if (!isInitialized) {
+      initializeScholarships();
+    }
+  }, [isInitialized, initializeScholarships]);
+
+  const filteredScholarships = scholarships.filter(s => {
     const matchesFilter = filter === 'All' || s.type === filter;
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || 
                           s.provider.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  if (isLoading && !isInitialized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-teal-600 animate-spin mb-4" />
+        <h2 className="text-xl font-bold text-slate-800">Loading Scholarships...</h2>
+      </div>
+    );
+  }
 
   return (
     <>

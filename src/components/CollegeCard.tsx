@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
-import { MapPin, Star, TrendingUp, Heart, ArrowUpRight } from 'lucide-react';
+import { MapPin, Star, TrendingUp, Heart, ArrowUpRight, Scale } from 'lucide-react';
 import type { College } from '../types';
 import { useCollegeStore } from '../store/collegeStore';
 import { Link } from 'react-router-dom';
 
 export default function CollegeCard({ college, index }: { college: College; index: number }) {
-  const { favorites, toggleFavorite } = useCollegeStore();
+  const { favorites, toggleFavorite, compareList, toggleCompare } = useCollegeStore();
   const isFav = favorites.includes(college.id);
+  const isComparing = compareList.includes(college.id);
 
   return (
     <motion.div
@@ -107,13 +108,24 @@ export default function CollegeCard({ college, index }: { college: College; inde
           )}
         </div>
 
-        <Link
-          to={`/college/${college.id}`}
-          className="flex items-center justify-center gap-2 w-full text-white py-2.5 rounded-xl font-semibold text-sm hover:shadow-lg transition-shadow"
-          style={{ background: 'linear-gradient(135deg, #0d9488, #0891b2)' }}
-        >
-          View Details <ArrowUpRight className="h-4 w-4" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={(e) => { e.preventDefault(); toggleCompare(college.id); }}
+            className={`flex items-center justify-center p-2.5 rounded-xl border-2 transition-colors ${
+              isComparing ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+            title={isComparing ? "Remove from Compare" : "Add to Compare"}
+          >
+            <Scale className="h-4 w-4" />
+          </button>
+          <Link
+            to={`/college/${college.id}`}
+            className="flex-1 flex items-center justify-center gap-2 text-white py-2.5 rounded-xl font-semibold text-sm hover:shadow-lg transition-shadow"
+            style={{ background: 'linear-gradient(135deg, #0d9488, #0891b2)' }}
+          >
+            View Details <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
     </motion.div>
   );

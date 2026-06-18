@@ -13,6 +13,7 @@ import { mockColleges } from '../data/mockData';
 interface CollegeState {
   colleges: College[];
   favorites: string[];
+  compareList: string[];
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
@@ -23,6 +24,8 @@ interface CollegeState {
   deleteCollege: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   setFavorites: (favorites: string[]) => void;
+  toggleCompare: (id: string) => void;
+  clearCompare: () => void;
 }
 
 export const useCollegeStore = create<CollegeState>()(
@@ -30,6 +33,7 @@ export const useCollegeStore = create<CollegeState>()(
     (set, get) => ({
       colleges: [],
       favorites: [],
+      compareList: [],
       isLoading: false,
       isInitialized: false,
       error: null,
@@ -181,10 +185,22 @@ export const useCollegeStore = create<CollegeState>()(
       },
 
       setFavorites: (favorites) => set({ favorites }),
+
+      toggleCompare: (id) => set((state) => {
+        const isSelected = state.compareList.includes(id);
+        if (isSelected) {
+          return { compareList: state.compareList.filter(cId => cId !== id) };
+        } else if (state.compareList.length < 3) {
+          return { compareList: [...state.compareList, id] };
+        }
+        return state;
+      }),
+
+      clearCompare: () => set({ compareList: [] })
     }),
     {
       name: 'college-storage',
-      partialize: (state) => ({ favorites: state.favorites }), // Only persist favorites locally
+      partialize: (state) => ({ favorites: state.favorites, compareList: state.compareList }),
     }
   )
 );
