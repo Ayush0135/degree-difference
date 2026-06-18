@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { Award, ExternalLink, ChevronDown, Check, Building2, Landmark, Filter, Search, FileText, CheckCircle } from 'lucide-react';
 import { mockScholarships } from '../data/mockData';
+import SEO from '../components/SEO';
 
 export default function Scholarships() {
   const [filter, setFilter] = useState<'All' | 'Government' | 'Private'>('All');
@@ -16,6 +17,12 @@ export default function Scholarships() {
   });
 
   return (
+    <>
+    <SEO 
+      title="Scholarship Directory" 
+      description="Discover and apply for top government and private scholarships in India. Find the best opportunities to fund your education."
+      canonical="/scholarships"
+    />
     <div className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-3xl mx-auto mb-12">
@@ -166,5 +173,6 @@ export default function Scholarships() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { Sparkles, MapPin, BookOpen, Wallet, Send, ArrowRight, Loader2, Bot } fr
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import type { College } from '../types';
+import SEO from '../components/SEO';
 
 export default function AIMatchmaker() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +42,12 @@ export default function AIMatchmaker() {
   };
 
   return (
+    <>
+    <SEO 
+      title="AI College Matchmaker" 
+      description="Tell us what you're looking for, and our AI will find the perfect colleges for you straight from our verified directory."
+      canonical="/ai-matchmaker"
+    />
     <div className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         
@@ -146,5 +153,6 @@ export default function AIMatchmaker() {
         </div>
       </div>
     </div>
+    </>
   );
 }

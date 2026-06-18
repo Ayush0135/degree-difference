@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
 import { useStudentStore } from '../store/studentStore';
 import { useAuthStore } from '../store/authStore';
+import SEO from '../components/SEO';
 
 /* ── tiny animated orb component ── */
 function Orb({ size, x, y, delay, color, scrollOffset }: { size: number; x: string; y: string; delay: number; color: string; scrollOffset?: any }) {
@@ -73,6 +74,12 @@ export default function Home() {
   const item = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } } };
 
   return (
+    <>
+    <SEO 
+      title="Home" 
+      description="DegreeDifference makes finding the right college easy. Explore top institutions, apply to multiple colleges, and find scholarships matching your profile."
+      canonical="/"
+    />
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -543,5 +550,6 @@ export default function Home() {
         </motion.div>
       </section>
     </motion.div>
+    </>
   );
 }

@@ -8,6 +8,7 @@ import { addQueryToDB } from '../lib/supabase';
 import type { Application } from '../types';
 import { useState } from 'react';
 import CollegeChatbot from '../components/CollegeChatbot';
+import SEO from '../components/SEO';
 
 export default function CollegeDetail() {
   const { id } = useParams();
@@ -104,6 +105,12 @@ export default function CollegeDetail() {
   const fadeUp = (d = 0) => ({ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { delay: d, duration: 0.4 } });
 
   return (
+    <>
+    <SEO 
+      title={college.name} 
+      description={`View details, courses, reviews, and admission criteria for ${college.name} in ${college.location}.`}
+      canonical={`/colleges/${college.id}`}
+    />
     <div className="min-h-screen bg-slate-50">
       {/* Hero */}
       <div className="relative h-72 sm:h-[26rem]" style={{ background: 'linear-gradient(135deg, #0f172a, #134e4a)' }}>
@@ -429,5 +436,6 @@ export default function CollegeDetail() {
       {/* AI Chatbot */}
       <CollegeChatbot college={college} />
     </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import CollegeCard from '../components/CollegeCard';
 import { useCollegeStore } from '../store/collegeStore';
 import { useSearchParams } from 'react-router-dom';
 import Fuse from 'fuse.js';
+import SEO from '../components/SEO';
 
 export default function Colleges() {
   const { colleges, isLoading, initializeColleges } = useCollegeStore();
@@ -94,6 +95,12 @@ export default function Colleges() {
   const reset = () => setFilters({ search: '', type: '', location: '', minFees: 0, maxFees: 5000000, minRating: 0 });
 
   return (
+    <>
+    <SEO 
+      title="Explore Colleges" 
+      description="Browse our comprehensive directory of engineering, medical, and arts colleges. Filter by location, fees, rating, and more to find your perfect fit."
+      canonical="/colleges"
+    />
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -189,5 +196,6 @@ export default function Colleges() {
         </div>
       </div>
     </motion.div>
+    </>
   );
 }
