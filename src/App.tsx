@@ -16,6 +16,7 @@ import StudentSelfRegister from './pages/StudentSelfRegister';
 import AIMatchmaker from './pages/AIMatchmaker';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import Scholarships from './pages/Scholarships';
 import ClerkSync from './components/ClerkSync';
 import { useAuthStore } from './store/authStore';
 import { useCollegeStore } from './store/collegeStore';
@@ -62,6 +63,7 @@ function AnimatedRoutes() {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
 
+      <Route path="/scholarships" element={<Scholarships />} />
       <Route
         path="/dashboard"
         element={

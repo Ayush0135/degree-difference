@@ -105,6 +105,20 @@ export type FilterOptions = {
   rating: number;
 };
 
+export interface Scholarship {
+  id: string;
+  name: string;
+  provider: string;
+  type: 'Government' | 'Private';
+  amount: string;
+  eligibility: string;
+  deadline: string;
+  matchScore?: number;
+  applied?: boolean;
+  website: string;
+  inDepthDetails: string;
+}
+
 export interface CounselorApplication {
   id?: string;
   fullName: string;

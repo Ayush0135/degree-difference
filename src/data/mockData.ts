@@ -1,4 +1,4 @@
-import type { College, Application, Query } from '../types';
+import type { College, Application, Query, Scholarship } from '../types';
 
 export const mockColleges: College[] = [
   {
@@ -244,4 +244,187 @@ export const mockCounselors = [
   { id: 'counselor1', name: 'Dr. Anita Desai', role: 'counselor', email: 'anita@example.com' },
   { id: 'counselor2', name: 'Mr. Rajesh Kumar', role: 'counselor', email: 'rajesh@example.com' },
   { id: 'counselor3', name: 'Ms. Priya Singh', role: 'counselor', email: 'priya.s@example.com' },
+];
+
+export const mockScholarships: Scholarship[] = [
+  {
+    id: 'schol-1',
+    name: 'Central Sector Scheme of Scholarship (PM-USP)',
+    provider: 'Department of Higher Education, Govt. of India',
+    type: 'Government',
+    amount: '₹12,000 to ₹20,000 / year',
+    eligibility: 'Above 80th percentile in Class 12. Family income < ₹4.5 Lakhs/year.',
+    deadline: '2026-10-31',
+    matchScore: 92,
+    website: 'https://scholarships.gov.in/',
+    inDepthDetails: 'The PM-USP Central Sector Scheme of Scholarship for College and University Students aims to provide financial assistance to meritorious students from low-income families. It covers day-to-day expenses while pursuing higher studies. Students must be enrolled in a regular degree course.'
+  },
+  {
+    id: 'schol-2',
+    name: 'INSPIRE Scholarship for Higher Education (SHE)',
+    provider: 'Department of Science & Technology',
+    type: 'Government',
+    amount: '₹80,000 / year',
+    eligibility: 'Top 1% in Class 12 Board exams pursuing B.Sc./B.S./Int. M.Sc. in Basic/Natural Sciences.',
+    deadline: '2026-11-15',
+    matchScore: 88,
+    website: 'https://online-inspire.gov.in/',
+    inDepthDetails: 'Innovation in Science Pursuit for Inspired Research (INSPIRE) offers 10,000 scholarships annually. Out of ₹80,000, ₹60,000 is given as cash and ₹20,000 is earmarked as a summertime attachment fee for research projects.'
+  },
+  {
+    id: 'schol-3',
+    name: 'AICTE Pragati Scholarship for Girls',
+    provider: 'AICTE',
+    type: 'Government',
+    amount: '₹50,000 / year',
+    eligibility: 'Girl students admitted to 1st year of AICTE approved Degree/Diploma. Max 2 girls per family. Income < ₹8 Lakhs.',
+    deadline: '2026-12-31',
+    matchScore: 85,
+    website: 'https://scholarships.gov.in/',
+    inDepthDetails: 'Pragati is an MHRD Scheme implemented by AICTE aimed at providing assistance for the advancement of girls pursuing technical education. It empowers young women with the financial means to complete their degree/diploma.'
+  },
+  {
+    id: 'schol-4',
+    name: 'Post-Matric Scholarship for SC/ST/OBC',
+    provider: 'Ministry of Social Justice & Empowerment',
+    type: 'Government',
+    amount: 'Fee Reimbursement + Monthly Maintenance',
+    eligibility: 'Students from SC/ST/OBC categories. Income limits apply (typically < ₹2.5 Lakhs).',
+    deadline: '2026-09-30',
+    matchScore: 95,
+    website: 'https://scholarships.gov.in/',
+    inDepthDetails: 'This scheme provides financial assistance to students belonging to reserved categories for studying at the post-matriculation or post-secondary stage to enable them to complete their education. Covers compulsory non-refundable fees.'
+  },
+  {
+    id: 'schol-5',
+    name: 'Ishan Uday Special Scholarship Scheme',
+    provider: 'UGC',
+    type: 'Government',
+    amount: '₹5,400 to ₹7,800 / month',
+    eligibility: 'Students with domicile of North Eastern Region (NER). Family income < ₹4.5 Lakhs.',
+    deadline: '2026-10-15',
+    matchScore: 60,
+    website: 'https://scholarships.gov.in/',
+    inDepthDetails: 'Specifically launched to promote higher education and encourage children belonging to the North Eastern Region to pursue general degree courses, technical, and professional courses including medical and paramedical courses.'
+  },
+  {
+    id: 'schol-6',
+    name: 'SBI Platinum Jubilee Asha Scholarship',
+    provider: 'SBI Foundation',
+    type: 'Private',
+    amount: 'Up to ₹5,00,000 / year',
+    eligibility: 'Meritorious students from economically weaker sections pursuing premier institutions (IITs, IIMs, etc).',
+    deadline: '2026-08-30',
+    matchScore: 82,
+    website: 'https://www.sbifoundation.in/',
+    inDepthDetails: 'The SBI Foundation offers one of the most generous private scholarships for brilliant minds who lack the financial resources to afford elite institution fees. Covers tuition, hostel, and study material.'
+  },
+  {
+    id: 'schol-7',
+    name: 'L’Oréal India For Young Women in Science',
+    provider: 'L’Oréal India',
+    type: 'Private',
+    amount: '₹2,50,000 (Lump sum/Instalments)',
+    eligibility: 'Girls who have passed Class 12 (Science) with min 85%. Family income < ₹6 Lakhs.',
+    deadline: '2026-07-15',
+    matchScore: 90,
+    website: 'https://www.foryoungwomeninscience.com/',
+    inDepthDetails: 'Encourages young women to pursue their careers in science. Covers graduation courses in any field of science: pure sciences, applied sciences, engineering, and medical.'
+  },
+  {
+    id: 'schol-8',
+    name: 'Reliance Foundation Undergraduate Scholarships',
+    provider: 'Reliance Foundation',
+    type: 'Private',
+    amount: 'Up to ₹2,00,000 for the degree duration',
+    eligibility: 'Students enrolled in 1st year UG degree. Aptitude test required. Income < ₹15 Lakhs (preference to < ₹2.5 Lakhs).',
+    deadline: '2026-09-01',
+    matchScore: 78,
+    website: 'https://scholarships.reliancefoundation.org/',
+    inDepthDetails: 'Aims to enable and propel India’s future leaders. Up to 5000 undergraduate students are selected based on a rigorous aptitude test. Open to all streams and institutions.'
+  },
+  {
+    id: 'schol-9',
+    name: 'J.N. Tata Endowment Loan Scholarship',
+    provider: 'Tata Trusts',
+    type: 'Private',
+    amount: 'Up to ₹10,00,000 (Loan Scholarship)',
+    eligibility: 'Indian students going abroad for higher studies. Consistently good academic record.',
+    deadline: '2026-03-15',
+    matchScore: 40,
+    website: 'https://www.jntataendowment.org/',
+    inDepthDetails: 'A merit-based interest-free loan scholarship for higher studies abroad. Selected scholars may also be recommended for partial travel grants.'
+  },
+  {
+    id: 'schol-10',
+    name: 'Swami Dayanand Scholarship Program',
+    provider: 'Swami Dayanand Education Foundation',
+    type: 'Private',
+    amount: 'Up to ₹50,000 / year',
+    eligibility: 'Students pursuing B.Tech, MBBS, B.Arch. Min 85% in Class 12. Income < ₹6 Lakhs.',
+    deadline: '2026-11-30',
+    matchScore: 72,
+    website: 'https://www.swamidayanand.org/',
+    inDepthDetails: 'Provides financial assistance to brilliant and needy students pursuing professional courses in India. The foundation also provides mentorship and career guidance.'
+  },
+  {
+    id: 'schol-11',
+    name: 'Foundation for Excellence (FFE) Scholarship',
+    provider: 'FFE India Trust',
+    type: 'Private',
+    amount: '₹40,000 / year',
+    eligibility: '1st-year students in B.E./B.Tech, MBBS, or 5-year Integrated Law. Income < ₹3 Lakhs.',
+    deadline: '2026-12-31',
+    matchScore: 85,
+    website: 'https://ffe.org/',
+    inDepthDetails: 'FFE provides financial assistance, soft-skills training, and mentorship to exceptionally bright students from low-income backgrounds pursuing professional degrees in Engineering, Medicine, and Law.'
+  },
+  {
+    id: 'schol-12',
+    name: 'GSK Scholars Programme',
+    provider: 'GlaxoSmithKline Pharmaceuticals Ltd.',
+    type: 'Private',
+    amount: 'Up to ₹1,00,000 / year',
+    eligibility: '1st-year MBBS students in government colleges. Min 65% in Class 12. Income < ₹3 Lakhs.',
+    deadline: '2026-10-15',
+    matchScore: 78,
+    website: 'https://india.gsk.com/',
+    inDepthDetails: 'A flagship CSR initiative by GSK India to support aspiring doctors from financially constrained backgrounds to pursue their MBBS without financial burden.'
+  },
+  {
+    id: 'schol-13',
+    name: 'Inlaks Fine Art Award',
+    provider: 'Inlaks Shivdasani Foundation',
+    type: 'Private',
+    amount: '₹3,00,000 (One-time)',
+    eligibility: 'Recent graduates or final year students of Fine Arts (BFA/MFA) under 30 years old.',
+    deadline: '2026-10-01',
+    matchScore: 65,
+    website: 'https://www.inlaksfoundation.org/',
+    inDepthDetails: 'A prestigious award designed to help young artists in their formative years to develop their creative talent. The award requires a detailed portfolio submission and an artist statement.'
+  },
+  {
+    id: 'schol-14',
+    name: 'HDFC Bank Parivartan Educational Crisis Scholarship',
+    provider: 'HDFC Bank',
+    type: 'Private',
+    amount: 'Up to ₹75,000 / year',
+    eligibility: 'Students facing a personal or family crisis that has occurred during the past three years. Income < ₹2.5 Lakhs.',
+    deadline: '2026-09-30',
+    matchScore: 80,
+    website: 'https://www.hdfcbank.com/',
+    inDepthDetails: 'Part of HDFC Bank’s CSR initiative, this program aims to support meritorious and needy students who are at risk of dropping out of their studies due to an unforeseen crisis.'
+  },
+  {
+    id: 'schol-15',
+    name: 'Colgate Keep India Smiling Foundational Scholarship',
+    provider: 'Colgate-Palmolive (India) Ltd.',
+    type: 'Private',
+    amount: '₹30,000 / year',
+    eligibility: '1st-year Engineering/Medical/Dental students. Min 60% in Class 12. Income < ₹5 Lakhs.',
+    deadline: '2026-11-30',
+    matchScore: 88,
+    website: 'https://www.colgate.com/en-in',
+    inDepthDetails: 'Provides foundational support to individuals who are deserving and meritorious but lack resources to pursue their dreams. It includes not just financial aid but also mentorship.'
+  }
 ];

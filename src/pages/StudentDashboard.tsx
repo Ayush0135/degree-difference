@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { BookOpen, Heart, FileText, MessageSquare, TrendingUp, Clock, CheckCircle, GraduationCap, ArrowRight } from 'lucide-react';
+import { BookOpen, Heart, FileText, MessageSquare, TrendingUp, Clock, CheckCircle, GraduationCap, ArrowRight, Check } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useCollegeStore } from '../store/collegeStore';
 import { useStudentStore } from '../store/studentStore';
 import { Link } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Award, ExternalLink } from 'lucide-react';
+import { mockScholarships } from '../data/mockData';
 
 const statCfg = [
   { icon: FileText, label: 'Applications', color: '#0891b2', bg: '#ecfeff' },
@@ -19,13 +20,27 @@ function Badge({ status }: { status: string }) {
   return <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold shrink-0 ${m[status] || 'bg-slate-100 text-slate-600'}`}>{status.replace('_', ' ').toUpperCase()}</span>;
 }
 
+const APP_STAGES = [
+  'Application Received',
+  'Document Verification',
+  'Eligibility Check',
+  'Counseling Round',
+  'Final Approval'
+];
+
 export default function StudentDashboard() {
   const { user } = useAuthStore();
   const { colleges, favorites } = useCollegeStore();
   const { applications, queries, initializeData, uploadDocument, isLoading } = useStudentStore();
   
   const [uploadingAppId, setUploadingAppId] = useState<string | null>(null);
+  const [appliedScholarships, setAppliedScholarships] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleApplyScholarship = (id: string) => {
+    setAppliedScholarships(prev => [...prev, id]);
+    // In a real app, this would make an API call
+  };
 
   useEffect(() => {
     if (user?.id) {
@@ -110,10 +125,36 @@ export default function StudentDashboard() {
                           <div className="min-w-0"><h3 className="font-semibold text-slate-900 text-sm truncate">{a.collegeName}</h3><p className="text-xs text-slate-500">{a.course}</p></div>
                           <Badge status={a.status} />
                         </div>
-                        <div className="mb-2">
-                          <div className="flex justify-between text-[11px] text-slate-500 mb-1"><span>{a.progress?.currentStage || 'Application Received'}</span><span>{a.progress?.step || 1}/{a.progress?.totalSteps || 5}</span></div>
-                          <div className="w-full bg-slate-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{ width: `${((a.progress?.step || 1) / (a.progress?.totalSteps || 5)) * 100}%`, background: 'linear-gradient(to right, #0d9488, #0891b2)' }} /></div>
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between relative mt-4">
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 rounded-full"></div>
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-teal-500 rounded-full transition-all duration-500" style={{ width: `${((a.progress?.step || 1) - 1) / (APP_STAGES.length - 1) * 100}%` }}></div>
+                            {APP_STAGES.map((stage, idx) => {
+                              const stepNum = idx + 1;
+                              const currentStep = a.progress?.step || 1;
+                              const isCompleted = stepNum < currentStep;
+                              const isCurrent = stepNum === currentStep;
+                              
+                              return (
+                                <div key={stage} className="relative flex flex-col items-center group">
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors relative z-10 ${
+                                    isCompleted ? 'bg-teal-500 border-teal-500 text-white' : 
+                                    isCurrent ? 'bg-white border-teal-500 text-teal-600' : 
+                                    'bg-white border-slate-200 text-slate-300'
+                                  }`}>
+                                    {isCompleted ? <Check className="w-3 h-3" /> : stepNum}
+                                  </div>
+                                  <span className={`absolute -bottom-6 w-24 text-center text-[9px] font-medium leading-tight ${
+                                    isCurrent ? 'text-teal-700' : isCompleted ? 'text-slate-600' : 'text-slate-400'
+                                  }`}>
+                                    {stage}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
+                        <div className="h-6"></div> {/* Spacer for the absolute positioned text */}
                         <div className="flex items-center justify-between text-[11px] text-slate-400">
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Applied {new Date(a.appliedDate).toLocaleDateString()}</span>
                           <span className="flex items-center gap-1"><FileText className="h-3 w-3" />{a.documents?.length || 0} docs</span>
@@ -154,6 +195,62 @@ export default function StudentDashboard() {
                         {q.response && <div className="bg-emerald-50 rounded-lg p-2.5"><p className="text-[11px] text-emerald-800"><strong>Response:</strong> {q.response}</p></div>}
                       </div>
                     ))}
+                  </div>
+                </motion.div>
+
+                {/* Scholarship Finder */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-amber-500" />
+                      <h2 className="text-lg font-bold text-slate-900">Scholarship Matcher</h2>
+                    </div>
+                    <Link to="/scholarships" className="text-amber-600 text-sm font-semibold hover:text-amber-700 flex items-center gap-1">
+                      View Directory <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                  
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {mockScholarships.slice(0, 4).map((s) => {
+                      const isApplied = appliedScholarships.includes(s.id);
+                      return (
+                        <div key={s.id} className="border border-slate-200 rounded-xl p-4 flex flex-col hover:shadow-md transition-shadow bg-slate-50">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="font-bold text-slate-900 text-sm">{s.name}</h3>
+                              <p className="text-xs text-slate-500">{s.provider}</p>
+                            </div>
+                            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shrink-0">
+                              {s.matchScore}% Match
+                            </span>
+                          </div>
+                          
+                          <div className="mt-2 mb-4 space-y-1">
+                            <p className="text-xs text-slate-700"><strong>Amount:</strong> <span className="text-emerald-600 font-semibold">{s.amount}</span></p>
+                            <p className="text-[10px] text-slate-500 line-clamp-2"><strong>Eligibility:</strong> {s.eligibility}</p>
+                            <p className="text-[10px] text-slate-500"><strong>Deadline:</strong> {new Date(s.deadline).toLocaleDateString()}</p>
+                          </div>
+                          
+                          <div className="mt-auto pt-3 border-t border-slate-200">
+                            <button 
+                              onClick={() => handleApplyScholarship(s.id)}
+                              disabled={isApplied}
+                              className={`w-full flex justify-center items-center gap-2 text-xs font-bold py-2 rounded-lg transition-all ${
+                                isApplied 
+                                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
+                              }`}
+                            >
+                              {isApplied ? (
+                                <>Applied <Check className="h-3 w-3" /></>
+                              ) : (
+                                <>Apply Now <ExternalLink className="h-3 w-3" /></>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               </div>

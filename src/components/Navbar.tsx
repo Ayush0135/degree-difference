@@ -32,6 +32,7 @@ export default function Navbar() {
   const links = [
     { path: '/', label: 'Home', show: !isAuthenticated },
     { path: '/colleges', label: 'Colleges', show: !isAuthenticated },
+    { path: '/scholarships', label: 'Scholarships', show: true },
     { path: '/ai-matchmaker', label: 'AI Matchmaker', show: true },
     { path: '/dashboard', label: 'Dashboard', show: isAuthenticated && user?.role === 'student' },
     { path: '/admin', label: 'Admin Dashboard', show: isAuthenticated && user?.role === 'admin' },
