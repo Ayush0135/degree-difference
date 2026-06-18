@@ -64,7 +64,7 @@ export default function CounselorDashboard() {
   const {
     applications, initializeData, setupRealtime, queries,
     manuallyRegisterStudent, addQuery, counselors, marqueeOffer,
-    updateScholarship, advanceApplicationStep,
+    updateScholarship, advanceApplicationStep, toggleHotLead, submitDocumentLink
   } = useAdminStore();
   const { colleges } = useCollegeStore();
 
