@@ -35,7 +35,7 @@ type View = 'home' | 'students' | 'earnings' | 'profile';
 export default function CounselorDashboard() {
   const [view, setView] = useState<View>('home');
   const [sel, setSelId] = useState<string | null>(null);
-  const [scholarshipForm, setScholarshipForm] = useState<{ amount: string; details: string } | null>(null);
+  const [scholarshipForm, setScholarshipForm] = useState<{ amount: string; details: string; documentLink?: string } | null>(null);
   const [showRegModal, setShowRegModal] = useState(false);
   const [showMsgModal, setShowMsgModal] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -149,6 +149,7 @@ export default function CounselorDashboard() {
       highSchoolMarks: fd.get('marks') as string,
       course: fd.get('course') as string,
       collegeId: fd.get('college') as string,
+      documentLink: fd.get('documentLink') as string,
       counselorId,
       assignedCounselorName: counselorName,
     });
@@ -418,13 +419,22 @@ export default function CounselorDashboard() {
 
                             {scholarshipForm ? (
                               <form onClick={e => e.stopPropagation()}
-                                onSubmit={e => { e.preventDefault(); updateScholarship(a.id, parseInt(scholarshipForm.amount), scholarshipForm.details); setScholarshipForm(null); }}
+                                onSubmit={e => { 
+                                  e.preventDefault(); 
+                                  updateScholarship(a.id, parseInt(scholarshipForm.amount), scholarshipForm.details); 
+                                  if (scholarshipForm.documentLink) {
+                                    useAdminStore.getState().submitDocumentLink(a.id, scholarshipForm.documentLink);
+                                  }
+                                  setScholarshipForm(null); 
+                                }}
                                 className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 space-y-2">
                                 <p className="text-[11px] font-bold text-emerald-800">Add Scholarship</p>
                                 <input type="number" required placeholder="Amount ₹" value={scholarshipForm.amount} onChange={e => setScholarshipForm({ ...scholarshipForm, amount: e.target.value })}
                                   className="w-full text-xs px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none" />
                                 <input type="text" required placeholder="Reason" value={scholarshipForm.details} onChange={e => setScholarshipForm({ ...scholarshipForm, details: e.target.value })}
                                   className="w-full text-xs px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none" />
+                                <input type="url" placeholder="Google Drive Link (Optional)" value={scholarshipForm.documentLink || ''} onChange={e => setScholarshipForm({ ...scholarshipForm, documentLink: e.target.value })}
+                                  className="w-full text-xs px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none focus:border-teal-500" />
                                 <div className="flex gap-2">
                                   <button type="submit" className="flex-1 text-xs font-bold text-white bg-emerald-600 py-2 rounded-lg">Save</button>
                                   <button type="button" onClick={() => setScholarshipForm(null)} className="flex-1 text-xs font-bold text-slate-600 bg-slate-100 py-2 rounded-lg">Cancel</button>
@@ -438,7 +448,7 @@ export default function CounselorDashboard() {
                                 </button>
                                 <button onClick={() => setChatAppId({ id: a.id, name: a.studentName })}
                                   className="flex-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 py-2 rounded-xl active:scale-95 transition-all">
-                                  Notes
+                                  Secure Terminal
                                 </button>
                               </div>
                             )}
@@ -614,6 +624,11 @@ export default function CounselorDashboard() {
                 className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors" />
             </div>
           ))}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Google Drive Link (Docs)</label>
+            <input type="url" name="documentLink" placeholder="Optional"
+              className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors" />
+          </div>
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Gender</label>
             <select name="gender" required className="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">

@@ -22,6 +22,7 @@ interface AdminState {
   updateScholarship: (id: string, amount: number, details: string) => Promise<void>;
   assignIncentive: (id: string, amount: number) => Promise<void>;
   advanceApplicationStep: (id: string) => Promise<void>;
+  submitDocumentLink: (id: string, link: string) => Promise<void>;
   addCounselor: (counselor: Partial<Counselor>) => void;
   updateCounselorFakeAdmissions: (counselorId: string, count: number) => Promise<void>;
   addQuery: (query: Partial<Query>) => Promise<void>;
@@ -225,7 +226,8 @@ export const useAdminStore = create<AdminState>()(
         step: 1,
         totalSteps: 5,
         currentStage: 'Application Received'
-      }
+      },
+      documentLink: app.documentLink
     };
     
     if (isSupabaseConfigured()) {
@@ -278,6 +280,15 @@ export const useAdminStore = create<AdminState>()(
     set(state => ({
       applications: state.applications.map(app => 
         app.id === id ? { ...app, incentiveAmount: amount } : app
+      )
+    }));
+  },
+
+  submitDocumentLink: async (id, link) => {
+    // For now, update locally. Supabase DB backend would be updated similarly if added.
+    set(state => ({
+      applications: state.applications.map(app => 
+        app.id === id ? { ...app, documentLink: link } : app
       )
     }));
   },

@@ -45,7 +45,7 @@ export default function ApplicationChat({ appId, studentName, currentUserId, cur
         
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div>
-            <h3 className="font-bold text-slate-900">Discussion</h3>
+            <h3 className="font-bold text-slate-900 flex items-center gap-1.5"><ShieldAlert className="h-4 w-4 text-emerald-600" /> Secure Terminal</h3>
             <p className="text-xs text-slate-500">Regarding: {studentName}</p>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg"><X className="h-5 w-5" /></button>

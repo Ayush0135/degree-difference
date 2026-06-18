@@ -455,6 +455,13 @@ export default function AdminDashboard() {
                         </div>
                       ) : null}
 
+                      {a.documentLink ? (
+                        <div className="mt-2 text-[11px] text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Secure Documents Submitted</span>
+                          <a href={a.documentLink} target="_blank" rel="noopener noreferrer" className="font-bold underline hover:text-blue-900 px-2 py-0.5 bg-blue-100 rounded-md">View Drive Link</a>
+                        </div>
+                      ) : null}
+
                       {a.counselorId ? (
                         <div className="mt-2 space-y-2">
                           <div className="text-[11px] text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg inline-block">
@@ -498,7 +505,7 @@ export default function AdminDashboard() {
                       )}
                       <button onClick={() => setChatAppId({ id: a.id, name: a.studentName })}
                         className="text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-lg ml-auto active:scale-95 transition-all">
-                        Discuss
+                        Secure Terminal
                       </button>
                     </div>
                   </div>

@@ -62,6 +62,7 @@ export interface Application {
     totalSteps: number;
     currentStage: string;
   };
+  documentLink?: string;
 }
 
 export interface Query {
