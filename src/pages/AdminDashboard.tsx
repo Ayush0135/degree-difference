@@ -165,12 +165,12 @@ export default function AdminDashboard() {
       {/* Logo */}
       <div className="px-6 py-5 border-b border-white/8">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
             <GraduationCap className="h-4 w-4 text-white" />
           </div>
           <div>
             <span className="text-sm font-black text-white tracking-tight">Degree Difference</span>
-            <span className="block text-[10px] text-slate-500 font-medium uppercase tracking-widest">Admin</span>
+            <span className="block text-[10px] text-teal-200 font-medium uppercase tracking-widest">Admin</span>
           </div>
         </div>
       </div>
@@ -179,15 +179,15 @@ export default function AdminDashboard() {
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         {[...NAV_SECTIONS, ...(user?.role === 'admin' ? [ADMIN_SECTION] : [])].map(section => (
           <div key={section.label}>
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 mb-1.5">{section.label}</p>
+            <p className="text-[10px] font-bold text-teal-200 uppercase tracking-widest px-3 mb-1.5">{section.label}</p>
             {section.items.map(item => {
               const active = tab === item.id;
               return (
                 <button key={item.id} onClick={() => go(item.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 text-sm font-medium transition-all duration-150 group relative
-                    ${active ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}>
-                  {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-teal-400 rounded-r-full" />}
-                  <item.icon className={`h-4 w-4 shrink-0 transition-colors ${active ? 'text-teal-400' : 'text-slate-600 group-hover:text-slate-400'}`} />
+                    ${active ? 'bg-white/20 text-white shadow-sm' : 'text-teal-100 hover:text-white hover:bg-white/10'}`}>
+                  {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white rounded-r-full" />}
+                  <item.icon className={`h-4 w-4 shrink-0 transition-colors ${active ? 'text-white' : 'text-teal-50 group-hover:text-white'}`} />
                   {item.label}
                   {item.id === 'counselor_applications' && pendingCounselorApps > 0 && (
                     <span className="ml-auto text-[10px] font-black bg-amber-500 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">{pendingCounselorApps}</span>
@@ -206,8 +206,8 @@ export default function AdminDashboard() {
             {user?.name?.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-300 truncate">{user?.name}</p>
-            <p className="text-[10px] text-slate-600 capitalize">{user?.role}</p>
+            <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
+            <p className="text-[10px] text-teal-200 capitalize">{user?.role}</p>
           </div>
           <div className={`ml-auto w-1.5 h-1.5 rounded-full shrink-0 ${dbConnected ? 'bg-teal-400' : 'bg-amber-400'}`} title={dbConnected ? 'Supabase connected' : 'Local mode'} />
         </div>
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#f7f7f8] flex" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden lg:flex w-56 bg-[#0e0e10] flex-col fixed inset-y-0 left-0 z-40">
+      <aside className="hidden lg:flex w-56 flex-col fixed inset-y-0 left-0 z-40" style={{ background: 'linear-gradient(180deg, #0d9488, #0891b2)' }}>
         <SidebarContent />
       </aside>
 
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
               className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setDrawerOpen(false)} />
             <motion.aside key="drawer" initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="fixed inset-y-0 left-0 w-60 bg-[#0e0e10] z-50 flex flex-col lg:hidden shadow-2xl">
+              className="fixed inset-y-0 left-0 w-60 z-50 flex flex-col lg:hidden shadow-2xl" style={{ background: 'linear-gradient(180deg, #0d9488, #0891b2)' }}>
               <SidebarContent />
             </motion.aside>
           </>
@@ -402,7 +402,7 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-2">
                 {colleges.map((c, i) => (
-                  <motion.div key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                  <div key={c.id}
                     className="bg-white border border-slate-200/70 rounded-xl p-3.5 flex items-center gap-4 hover:shadow-sm transition-shadow group">
                     <img src={c.image} alt={c.name} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-slate-100" />
                     <div className="flex-1 min-w-0">
@@ -417,7 +417,7 @@ export default function AdminDashboard() {
                       <Link to={`/admin/edit-college/${c.id}`} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"><Edit className="h-3.5 w-3.5" /></Link>
                       <button onClick={() => { if (confirm('Delete?')) deleteCollege(c.id); }} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
                 {colleges.length === 0 && (
                   <div className="text-center py-16">
