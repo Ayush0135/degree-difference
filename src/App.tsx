@@ -113,6 +113,7 @@ function AnimatedRoutes() {
 function MainApp() {
   const { initializeColleges } = useCollegeStore();
   const { scrollYProgress } = useScroll();
+  const location = useLocation();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
@@ -123,6 +124,17 @@ function MainApp() {
     // Initialize colleges from Supabase or fallback to mock data
     initializeColleges();
   }, [initializeColleges]);
+
+  const isDashboard = ['/admin', '/counselor', '/dashboard'].some(path => location.pathname.startsWith(path));
+
+  if (isDashboard) {
+    return (
+      <>
+        <ScrollToTop />
+        <AnimatedRoutes />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">

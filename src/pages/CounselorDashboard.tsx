@@ -166,6 +166,7 @@ export default function CounselorDashboard() {
       counselorId,
       assignedCounselorName: counselorName,
     });
+    alert('Student registered successfully!');
     setShowRegModal(false);
   };
 
@@ -196,26 +197,28 @@ export default function CounselorDashboard() {
     { id: 'profile' as View, icon: UserCircle, label: 'Profile' },
   ];
 
-  /* ─── Sheet modal wrapper ─── */
-  const Sheet = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50" onClick={onClose} />
-          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
-              <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
-              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><X className="h-4 w-4" /></button>
-            </div>
-            <div className="overflow-y-auto flex-1">{children}</div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
+/* ─── Sheet modal wrapper ─── */
+const Sheet = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => (
+  <AnimatePresence>
+    {open && (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+          transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+          className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+            <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><X className="h-4 w-4" /></button>
+          </div>
+          <div className="overflow-y-auto flex-1">{children}</div>
+        </motion.div>
+      </div>
+    )}
+  </AnimatePresence>
+);
+
+const CounselorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]" style={{ fontFamily: "'Inter', sans-serif", paddingBottom: '64px' }}>

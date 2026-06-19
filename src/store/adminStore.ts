@@ -354,6 +354,8 @@ export const useAdminStore = create<AdminState>()(
       });
       if (dbUser) {
         newId = dbUser.id;
+      } else {
+        throw new Error('Failed to create counselor in the database. Ensure the email is not already in use.');
       }
     }
     
@@ -464,7 +466,11 @@ export const useAdminStore = create<AdminState>()(
     };
     if (isSupabaseConfigured()) {
       const dbUser = await addSubadminToDB(email);
-      if (dbUser) newUser = dbUser;
+      if (dbUser) {
+        newUser = dbUser;
+      } else {
+        throw new Error('Failed to add subadmin. The email might already be in use.');
+      }
     }
     set(state => ({ subadmins: [...state.subadmins, newUser] }));
   },

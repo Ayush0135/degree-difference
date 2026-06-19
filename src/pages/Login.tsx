@@ -75,33 +75,58 @@ export default function Login() {
     if (role === 'counselor') {
       // Direct email/password login for counselors. No OTP.
       let counselor = null;
+      let loginErrorMsg = 'Invalid counselor credentials or unauthorized account.';
+      
       try {
         const dbUser = await getUserByEmail(cleanEmail);
-        if (dbUser && dbUser.role === 'counselor' && dbUser.password === password) {
-          counselor = {
-            id: dbUser.id,
-            name: dbUser.name,
-            email: dbUser.email,
-            role: dbUser.role,
-            phone: dbUser.phone,
-            avatar: dbUser.avatar,
-            assignedStudents: [],
-            specialization: []
-          };
+        
+        if (dbUser) {
+          if (dbUser.role !== 'counselor') {
+            loginErrorMsg = 'Account does not have counselor privileges.';
+          } else if (dbUser.password !== password) {
+            loginErrorMsg = 'Incorrect password.';
+          } else if (dbUser.status === 'suspended') {
+            loginErrorMsg = 'Your account has been suspended. Please contact the administration.';
+          } else if (dbUser.status === 'blocked') {
+            loginErrorMsg = 'Your account has been blocked. Please contact the administration.';
+          } else if (dbUser.status === 'deleted') {
+            loginErrorMsg = 'Your account no longer exists.';
+          } else {
+            // Success
+            counselor = {
+              id: dbUser.id,
+              name: dbUser.name,
+              email: dbUser.email,
+              role: dbUser.role,
+              status: dbUser.status || 'active',
+              phone: dbUser.phone,
+              avatar: dbUser.avatar,
+              assignedStudents: [],
+              specialization: []
+            };
+          }
         }
       } catch (err) {
         console.error("Counselor login error:", err);
       }
 
-      if (!counselor) {
-        counselor = counselors.find(c => c.email === cleanEmail && c.password === password);
+      // Fallback for local dev without Supabase
+      if (!counselor && loginErrorMsg === 'Invalid counselor credentials or unauthorized account.') {
+        const localCounselor = counselors.find(c => c.email === cleanEmail && c.password === password);
+        if (localCounselor) {
+          if (localCounselor.status === 'suspended' || localCounselor.status === 'blocked' || localCounselor.status === 'deleted') {
+            loginErrorMsg = `Your account is ${localCounselor.status}. Please contact the administration.`;
+          } else {
+            counselor = localCounselor;
+          }
+        }
       }
 
       if (counselor) {
         login(counselor as unknown as import('../types').User);
         navigate('/counselor');
       } else {
-        setError('Invalid counselor credentials or unauthorized account.');
+        setError(loginErrorMsg);
       }
       setIsLoading(false);
       return;

@@ -223,14 +223,19 @@ export default function AdminDashboard() {
   const handleManualReg = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    await manuallyRegisterStudent({
-      studentName: fd.get('name') as string,
-      studentEmail: fd.get('email') as string,
-      studentPhone: fd.get('phone') as string,
-      course: fd.get('course') as string,
-    });
-    setTab('applications');
-    (e.target as HTMLFormElement).reset();
+    try {
+      await manuallyRegisterStudent({
+        studentName: fd.get('name') as string,
+        studentEmail: fd.get('email') as string,
+        studentPhone: fd.get('phone') as string,
+        course: fd.get('course') as string,
+      });
+      alert('Student registered successfully!');
+      setTab('applications');
+      (e.target as HTMLFormElement).reset();
+    } catch (err: any) {
+      alert(err.message || 'Failed to register student.');
+    }
   };
 
   const handleRespondToQuery = async (queryId: string) => {
@@ -266,43 +271,52 @@ export default function AdminDashboard() {
     const email = (fd.get('email') as string).trim().toLowerCase();
     const password = fd.get('password') as string;
     
-    addCounselor({ name, email, password });
-    
-    const doc = await generateCounselorPDF(name, email, password);
-    const pdfBase64 = btoa(doc.output());
-    
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        await supabase.functions.invoke('send-counselor-email', { body: { email, name, pdfBase64 } });
-        alert(`Counselor added and credentials emailed to ${email}`);
-      } catch {
-        alert('Counselor added, but failed to send email. Downloading PDF instead.');
+    try {
+      await addCounselor({ name, email, password });
+      
+      const doc = await generateCounselorPDF(name, email, password);
+      const pdfBase64 = btoa(doc.output());
+      
+      if (isSupabaseConfigured() && supabase) {
+        try {
+          await supabase.functions.invoke('send-counselor-email', { body: { email, name, pdfBase64 } });
+          alert(`Counselor added and credentials emailed to ${email}`);
+        } catch {
+          alert('Counselor added, but failed to send email. Downloading PDF instead.');
+          doc.save(`Credentials_${name.replace(/\s+/g, '_')}.pdf`);
+        }
+      } else {
+        alert('Counselor added locally. Downloading credentials PDF.');
         doc.save(`Credentials_${name.replace(/\s+/g, '_')}.pdf`);
       }
-    } else {
-      alert('Counselor added locally. Downloading credentials PDF.');
-      doc.save(`Credentials_${name.replace(/\s+/g, '_')}.pdf`);
+      
+      (e.target as HTMLFormElement).reset();
+    } catch (err: any) {
+      alert(err.message || 'Failed to add counselor. Please try again.');
     }
-    
-    (e.target as HTMLFormElement).reset();
   };
 
   const handleApproveCounselor = async (app: any) => {
     const ok = await approveCounselorApp(app.id);
     if (!ok) return alert('Failed to approve.');
     const password = Math.random().toString(36).slice(-8);
-    addCounselor({ name: app.fullName, email: app.email, password, specialization: [app.specialization] });
-    const doc = await generateCounselorPDF(app.fullName, app.email, password);
-    const pdfBase64 = btoa(doc.output());
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        await supabase.functions.invoke('send-counselor-email', { body: { email: app.email, name: app.fullName, pdfBase64 } });
-        alert(`Credentials emailed to ${app.email}`);
-      } catch {
+    
+    try {
+      await addCounselor({ name: app.fullName, email: app.email, password, specialization: [app.specialization] });
+      const doc = await generateCounselorPDF(app.fullName, app.email, password);
+      const pdfBase64 = btoa(doc.output());
+      if (isSupabaseConfigured() && supabase) {
+        try {
+          await supabase.functions.invoke('send-counselor-email', { body: { email: app.email, name: app.fullName, pdfBase64 } });
+          alert(`Credentials emailed to ${app.email}`);
+        } catch {
+          doc.save(`Credentials_${app.fullName.replace(/\s+/g, '_')}.pdf`);
+        }
+      } else {
         doc.save(`Credentials_${app.fullName.replace(/\s+/g, '_')}.pdf`);
       }
-    } else {
-      doc.save(`Credentials_${app.fullName.replace(/\s+/g, '_')}.pdf`);
+    } catch (err: any) {
+      alert(err.message || 'Failed to create counselor. The email might already exist.');
     }
   };
 
