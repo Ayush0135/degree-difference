@@ -118,14 +118,39 @@ export default function AdminDashboard() {
     setQueryResponseText('');
   };
 
-  const handleAddCounselor = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddCounselor = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    await addCounselor({
-      name: fd.get('name') as string,
-      email: (fd.get('email') as string).trim().toLowerCase(),
-      password: fd.get('password') as string,
-    });
+    const fd = new FormData(e.target as HTMLFormElement);
+    const name = fd.get('name') as string;
+    const email = (fd.get('email') as string).trim().toLowerCase();
+    const password = fd.get('password') as string;
+    
+    addCounselor({ name, email, password });
+    
+    const doc = new jsPDF();
+    doc.setFontSize(22); doc.setTextColor(13, 148, 136);
+    doc.text('Degree Difference', 20, 20);
+    doc.setFontSize(14); doc.setTextColor(0, 0, 0);
+    doc.text('Authorized Counselor Credentials', 20, 35);
+    doc.setFontSize(12);
+    doc.text(`Name: ${name}`, 20, 55);
+    doc.text(`Email: ${email}`, 20, 63);
+    doc.text(`Password: ${password}`, 20, 71);
+    const pdfBase64 = btoa(doc.output());
+    
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await supabase.functions.invoke('send-counselor-email', { body: { email, name, pdfBase64 } });
+        alert(`Counselor added and credentials emailed to ${email}`);
+      } catch {
+        alert('Counselor added, but failed to send email. Downloading PDF instead.');
+        doc.save(`Credentials_${name.replace(/\s+/g, '_')}.pdf`);
+      }
+    } else {
+      alert('Counselor added locally. Downloading credentials PDF.');
+      doc.save(`Credentials_${name.replace(/\s+/g, '_')}.pdf`);
+    }
+    
     (e.target as HTMLFormElement).reset();
   };
 
