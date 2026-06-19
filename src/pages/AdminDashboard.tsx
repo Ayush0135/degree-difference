@@ -48,6 +48,7 @@ const NAV_SECTIONS = [
   {
     label: 'Tools',
     items: [
+      { id: 'ai_matchmaker' as any, icon: Zap, label: 'AI Matchmaker', href: '/ai-matchmaker' },
       { id: 'manual_reg' as TabId, icon: UserPlus, label: 'Walk-in Reg' },
       { id: 'leaderboard' as TabId, icon: Award, label: 'Leaderboard' },
       { id: 'rule_book' as TabId, icon: BookOpen, label: 'Rule Book' },
@@ -178,6 +179,15 @@ export default function AdminDashboard() {
           <div key={section.label}>
             <p className="text-[10px] font-bold text-teal-200 uppercase tracking-widest px-3 mb-1.5">{section.label}</p>
             {section.items.map(item => {
+              if (item.href) {
+                return (
+                  <Link key={item.id} to={item.href}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 text-sm font-medium transition-all duration-150 group relative text-teal-100 hover:text-white hover:bg-white/10">
+                    <item.icon className="h-4 w-4 shrink-0 transition-colors text-teal-50 group-hover:text-white" />
+                    {item.label}
+                  </Link>
+                );
+              }
               const active = tab === item.id;
               return (
                 <button key={item.id} onClick={() => go(item.id)}

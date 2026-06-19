@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, FileText, CheckCircle, TrendingUp, X, Award, MessageSquare,
   Upload, Plus, Clock, Camera, Save, Home, DollarSign, UserCircle,
   UserPlus, QrCode, ChevronRight, Menu, GraduationCap, Copy, Check,
-  AlertCircle, ArrowUpRight, Circle, Star, FolderHeart
+  AlertCircle, ArrowUpRight, Circle, Star, FolderHeart, Sparkles
 } from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
 import { useCollegeStore } from '../store/collegeStore';
@@ -254,6 +255,9 @@ export default function CounselorDashboard() {
           {badges.map(b => (
             <span key={b.id} className="text-sm">{b.icon_url === 'star' ? '⭐' : b.icon_url === 'crown' ? '👑' : '🏅'}</span>
           ))}
+          <Link to="/ai-matchmaker" className="flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 active:scale-95 transition-all">
+            <Sparkles className="h-3.5 w-3.5" /> AI
+          </Link>
           <button onClick={() => setShowQR(true)}
             className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-lg hover:bg-teal-100 active:scale-95 transition-all">
             <QrCode className="h-3.5 w-3.5" /> QR
