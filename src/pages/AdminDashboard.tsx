@@ -165,7 +165,7 @@ export default function AdminDashboard() {
       {/* Logo */}
       <div className="px-6 py-5 border-b border-white/8">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Degree Difference" className="h-8 w-auto object-contain" />
+          <img src="/logo.png" alt="Degree Difference" className="h-6 w-auto object-contain brightness-0 invert opacity-90" />
           <div>
             <span className="block text-[10px] text-teal-200 font-medium uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded">Admin</span>
           </div>

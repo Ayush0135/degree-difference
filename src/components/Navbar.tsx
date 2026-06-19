@@ -45,7 +45,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group relative">
-            <img src="/logo.png" alt="Degree Difference" className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105" />
+            <img src="/logo.png" alt="Degree Difference" className="h-8 sm:h-9 w-auto object-contain transition-transform group-hover:scale-105" />
           </Link>
 
           {/* Desktop */}

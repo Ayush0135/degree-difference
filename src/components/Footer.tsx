@@ -12,7 +12,7 @@ export default function Footer() {
           {/* Brand & Mission */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-6 group inline-flex">
-              <img src="/logo.png" alt="Degree Difference" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+              <img src="/logo.png" alt="Degree Difference" className="h-8 w-auto object-contain transition-transform group-hover:scale-105 brightness-0 invert" />
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-6 max-w-sm">
               We're on a mission to simplify college admissions in India. Honest guidance, transparent data, and no hidden fees—just finding where you belong.
