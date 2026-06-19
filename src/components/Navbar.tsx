@@ -44,19 +44,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto pl-4 pr-6 sm:pl-4 sm:pr-10 lg:pl-6 lg:pr-16">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
-              className="p-2 rounded-xl"
-              style={{ background: 'linear-gradient(135deg, #0d9488, #0891b2)' }}
-            >
-              <GraduationCap className="h-5 w-5 text-white" />
-            </motion.div>
-            <span className="text-2xl font-black tracking-tight flex items-center gap-1.5">
-              <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(to right, #0f172a, #334155)' }}>Degree</span>
-              <span className="bg-clip-text text-transparent drop-shadow-sm" style={{ backgroundImage: 'linear-gradient(135deg, #0d9488, #06b6d4)' }}>Difference</span>
-            </span>
+          <Link to="/" className="flex items-center gap-2 group relative">
+            <img src="/logo.png" alt="Degree Difference" className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105" />
           </Link>
 
           {/* Desktop */}

@@ -12,10 +12,7 @@ export default function Footer() {
           {/* Brand & Mission */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-6 group inline-flex">
-              <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center transition-transform group-hover:scale-105">
-                <GraduationCap className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-xl font-black text-white tracking-tight">Degree Difference</span>
+              <img src="/logo.png" alt="Degree Difference" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-6 max-w-sm">
               We're on a mission to simplify college admissions in India. Honest guidance, transparent data, and no hidden fees—just finding where you belong.

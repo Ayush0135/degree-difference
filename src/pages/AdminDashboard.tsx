@@ -165,12 +165,9 @@ export default function AdminDashboard() {
       {/* Logo */}
       <div className="px-6 py-5 border-b border-white/8">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <GraduationCap className="h-4 w-4 text-white" />
-          </div>
+          <img src="/logo.png" alt="Degree Difference" className="h-8 w-auto object-contain" />
           <div>
-            <span className="text-sm font-black text-white tracking-tight">Degree Difference</span>
-            <span className="block text-[10px] text-teal-200 font-medium uppercase tracking-widest">Admin</span>
+            <span className="block text-[10px] text-teal-200 font-medium uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded">Admin</span>
           </div>
         </div>
       </div>
