@@ -64,6 +64,128 @@ const ADMIN_SECTION = {
   ],
 };
 
+const generateCounselorPDF = async (name: string, email: string, password: string) => {
+  const doc = new jsPDF();
+  
+  try {
+    const res = await fetch('/logo.png');
+    if (res.ok) {
+      const blob = await res.blob();
+      const logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      doc.addImage(logoBase64, 'PNG', 20, 15, 50, 12.4);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(13, 148, 136);
+      doc.text('Degree Difference', 20, 25);
+    }
+  } catch (err) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(13, 148, 136);
+    doc.text('Degree Difference', 20, 25);
+  }
+
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(200, 200, 200);
+  doc.line(20, 35, 190, 35);
+
+  let y = 45;
+  
+  doc.setFontSize(18);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Counselor Account Activation Letter', 20, y);
+  y += 12;
+
+  doc.setFontSize(14);
+  doc.text('Welcome to Our Counselor Network', 20, y);
+  y += 10;
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+
+  const body1 = `Dear Counselor,\n\nCongratulations! Your counselor registration has been successfully verified and approved by our administration team.\n\nWe are pleased to welcome you as an authorized counselor on our platform. Your account has been created, and you can now access the counselor portal to manage student inquiries, track admissions, monitor scholarship updates, and collaborate with the administration team in real time.`;
+  
+  doc.text(body1, 20, y, { maxWidth: 170 });
+  y += 45;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Login Credentials', 20, y);
+  y += 8;
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  
+  doc.setFont('helvetica', 'bold'); doc.text('Portal URL:', 20, y); doc.setFont('helvetica', 'normal'); doc.text('https://www.degreedifference.com/#/login', 55, y); y += 8;
+  doc.setFont('helvetica', 'bold'); doc.text('Email / Username:', 20, y); doc.setFont('helvetica', 'normal'); doc.text(email, 55, y); y += 8;
+  doc.setFont('helvetica', 'bold'); doc.text('Temporary Password:', 20, y); doc.setFont('helvetica', 'normal'); doc.text(password, 65, y); y += 15;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Important Instructions', 20, y);
+  y += 8;
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  const instructions = [
+    "1. Log in using the credentials provided above.",
+    "2. Change your password immediately after your first login for security purposes.",
+    "3. Keep your login credentials confidential and do not share them with anyone.",
+    "4. Update your profile information after logging in.",
+    "5. Contact the administration team if you face any login or account-related issues."
+  ];
+  instructions.forEach(inst => {
+    doc.text(inst, 20, y, { maxWidth: 170 });
+    y += 7;
+  });
+  y += 5;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Counselor Responsibilities', 20, y);
+  y += 8;
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  const responsibilities = [
+    "• Reviewing assigned student applications.",
+    "• Providing admission guidance and scholarship information.",
+    "• Tracking student progress throughout the admission process.",
+    "• Maintaining accurate and timely communication with students and administration team.",
+    "• Updating student records and status whenever required."
+  ];
+  responsibilities.forEach(resp => {
+    doc.text(resp, 20, y, { maxWidth: 170 });
+    y += 7;
+  });
+  y += 8;
+
+  doc.text("We look forward to working with you and appreciate your contribution to helping students achieve their educational goals.\n\nFor any assistance, please contact our support team.", 20, y, { maxWidth: 170 });
+  y += 25;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text("Best Regards,", 20, y); y += 7;
+  doc.text("Admissions & Counselor Management Team", 20, y); y += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.text("Degree Difference", 20, y); y += 6;
+  doc.text("www.degreedifference.com", 20, y); y += 6;
+  doc.text("support@degreedifference.com", 20, y);
+
+  return doc;
+};
+
 export default function AdminDashboard() {
   const { user } = useAuthStore();
   const {
@@ -127,15 +249,7 @@ export default function AdminDashboard() {
     
     addCounselor({ name, email, password });
     
-    const doc = new jsPDF();
-    doc.setFontSize(22); doc.setTextColor(13, 148, 136);
-    doc.text('Degree Difference', 20, 20);
-    doc.setFontSize(14); doc.setTextColor(0, 0, 0);
-    doc.text('Authorized Counselor Credentials', 20, 35);
-    doc.setFontSize(12);
-    doc.text(`Name: ${name}`, 20, 55);
-    doc.text(`Email: ${email}`, 20, 63);
-    doc.text(`Password: ${password}`, 20, 71);
+    const doc = await generateCounselorPDF(name, email, password);
     const pdfBase64 = btoa(doc.output());
     
     if (isSupabaseConfigured() && supabase) {
@@ -159,15 +273,7 @@ export default function AdminDashboard() {
     if (!ok) return alert('Failed to approve.');
     const password = Math.random().toString(36).slice(-8);
     addCounselor({ name: app.fullName, email: app.email, password, specialization: [app.specialization] });
-    const doc = new jsPDF();
-    doc.setFontSize(22); doc.setTextColor(13, 148, 136);
-    doc.text('Degree Difference', 20, 20);
-    doc.setFontSize(14); doc.setTextColor(0, 0, 0);
-    doc.text('Authorized Counselor Credentials', 20, 35);
-    doc.setFontSize(12);
-    doc.text(`Name: ${app.fullName}`, 20, 55);
-    doc.text(`Email: ${app.email}`, 20, 63);
-    doc.text(`Password: ${password}`, 20, 71);
+    const doc = await generateCounselorPDF(app.fullName, app.email, password);
     const pdfBase64 = btoa(doc.output());
     if (isSupabaseConfigured() && supabase) {
       try {
