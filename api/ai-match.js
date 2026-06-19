@@ -4,7 +4,7 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://zmsqbysmpxkqeoapxn
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inptc3FieXNtcHhrcWVvYXB4bmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxODE0NDAsImV4cCI6MjA5MTc1NzQ0MH0.iN_FeepWWIXZmv-ofgkdv3gAXali77yebxGdqjBe8pI';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const geminiApiKey = process.env.GEMINI_API_KEY || '';
+const geminiApiKey = process.env.GEMINI_API_KEY || 'AIzaSyD4-uRzquwtN_yA8kHBISBgb5_WwuxxVyM';
 const groqApiKey = process.env.GROQ_API_KEY || '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';
 
 export default async function handler(req, res) {
