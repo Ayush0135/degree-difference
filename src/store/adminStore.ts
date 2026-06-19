@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Application, Query, CounselorApplication, Counselor, User } from '../types';
-import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB, updateCounselorFakeAdmissionsInDB, updatePlatformSettings, fetchPlatformSettings, supabase, getUserByEmail, addQueryToDB, respondToQueryInDB } from '../lib/supabase';
+import { fetchApplicationsFromDB, fetchQueriesFromDB, updateApplicationStatusInDB, updateApplicationScholarshipInDB, updateApplicationCounselorInDB, updateApplicationProgressInDB, updateApplicationIncentiveInDB, isSupabaseConfigured, fetchCounselorsFromDB, createUser, addApplicationToDB, fetchCounselorApplicationsFromDB, approveCounselorApplicationInDB, awardCounselorBadge, fetchSubadminsFromDB, addSubadminToDB, removeSubadminFromDB, fetchStudentsFromDB, updateCounselorFakeAdmissionsInDB, updatePlatformSettings, fetchPlatformSettings, supabase, getUserByEmail, addQueryToDB, respondToQueryInDB, updateUserStatusInDB, deleteUserFromDB } from '../lib/supabase';
 import { mockApplications, mockQueries, mockCounselors } from '../data/mockData';
 
 interface AdminState {
@@ -24,7 +24,9 @@ interface AdminState {
   advanceApplicationStep: (id: string) => Promise<void>;
   submitDocumentLink: (id: string, link: string) => Promise<void>;
   toggleHotLead: (id: string) => Promise<void>;
-  addCounselor: (counselor: Partial<Counselor>) => void;
+  addCounselor: (counselor: Partial<Counselor>) => Promise<void>;
+  updateCounselorStatus: (id: string, status: 'active' | 'suspended' | 'blocked') => Promise<void>;
+  deleteCounselor: (id: string) => Promise<void>;
   updateCounselorFakeAdmissions: (counselorId: string, count: number) => Promise<void>;
   addQuery: (query: Partial<Query>) => Promise<void>;
   respondToQuery: (id: string, response: string) => Promise<void>;
@@ -360,6 +362,7 @@ export const useAdminStore = create<AdminState>()(
       name: counselorData.name || 'Unknown Counselor',
       email: counselorData.email || '',
       role: 'counselor',
+      status: 'active',
       password: counselorData.password || '',
       assignedStudents: [],
       specialization: [],
@@ -369,6 +372,24 @@ export const useAdminStore = create<AdminState>()(
       ...counselorData
     };
     set(state => ({ counselors: [...state.counselors, newCounselor] }));
+  },
+
+  updateCounselorStatus: async (id, status) => {
+    if (isSupabaseConfigured()) {
+      await updateUserStatusInDB(id, status);
+    }
+    set(state => ({
+      counselors: state.counselors.map(c => c.id === id ? { ...c, status } : c)
+    }));
+  },
+
+  deleteCounselor: async (id) => {
+    if (isSupabaseConfigured()) {
+      await deleteUserFromDB(id);
+    }
+    set(state => ({
+      counselors: state.counselors.filter(c => c.id !== id)
+    }));
   },
 
   updateCounselorFakeAdmissions: async (counselorId: string, count: number) => {

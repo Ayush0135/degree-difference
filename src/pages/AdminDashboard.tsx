@@ -193,7 +193,7 @@ export default function AdminDashboard() {
     assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors,
     counselorApplications, approveCounselorApp, updateCounselorFakeAdmissions,
     subadmins, addSubadmin, removeSubadmin, marqueeOffer: storeMarquee, updateMarqueeOffer,
-    setupRealtime, students, respondToQuery,
+    setupRealtime, students, respondToQuery, updateCounselorStatus, deleteCounselor
   } = useAdminStore();
   const { colleges, initializeColleges, deleteCollege } = useCollegeStore();
   const dbConnected = isSupabaseConfigured();
@@ -238,6 +238,25 @@ export default function AdminDashboard() {
     await respondToQuery(queryId, queryResponseText);
     setRespondingQueryId(null);
     setQueryResponseText('');
+  };
+
+  const handleCounselorAction = async (counselor: any, action: 'active' | 'suspended' | 'blocked' | 'deleted') => {
+    if (action === 'deleted') {
+      if (!confirm(`Are you sure you want to permanently delete ${counselor.name}?`)) return;
+      await deleteCounselor(counselor.id);
+    } else {
+      if (!confirm(`Are you sure you want to change ${counselor.name}'s status to ${action}?`)) return;
+      await updateCounselorStatus(counselor.id, action);
+    }
+    
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await supabase.functions.invoke('send-counselor-status-email', { body: { email: counselor.email, name: counselor.name, status: action } });
+        alert(`Action successful. Email sent to ${counselor.email}`);
+      } catch {
+        alert(`Action successful, but failed to send email to ${counselor.email}`);
+      }
+    }
   };
 
   const handleAddCounselor = async (e: React.FormEvent) => {
@@ -840,13 +859,26 @@ export default function AdminDashboard() {
                   <h3 className="text-sm font-bold text-slate-900 mb-3">Active Counselors</h3>
                   <div className="space-y-2">
                     {counselors.map(c => (
-                      <div key={c.id} className="bg-white border border-slate-200/70 rounded-xl px-4 py-3 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 font-black text-xs shrink-0">{c.name.charAt(0)}</div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{c.name}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{c.email}</p>
+                      <div key={c.id} className="bg-white border border-slate-200/70 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 font-black text-xs shrink-0">{c.name.charAt(0)}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{c.name}</p>
+                            <p className="text-[11px] text-slate-400 truncate">{c.email}</p>
+                          </div>
                         </div>
-                        <StatusPill status="approved" />
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <StatusPill status={c.status === 'blocked' ? 'rejected' : c.status === 'suspended' ? 'pending' : 'approved'} />
+                          <div className="flex gap-1">
+                            {c.status !== 'suspended' && <button onClick={() => handleCounselorAction(c, 'suspended')} className="px-2 py-1 text-[10px] font-medium bg-amber-50 text-amber-600 rounded hover:bg-amber-100 transition-colors">Suspend</button>}
+                            {c.status === 'suspended' && <button onClick={() => handleCounselorAction(c, 'active')} className="px-2 py-1 text-[10px] font-medium bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 transition-colors">Unsuspend</button>}
+                            
+                            {c.status !== 'blocked' && <button onClick={() => handleCounselorAction(c, 'blocked')} className="px-2 py-1 text-[10px] font-medium bg-rose-50 text-rose-600 rounded hover:bg-rose-100 transition-colors">Block</button>}
+                            {c.status === 'blocked' && <button onClick={() => handleCounselorAction(c, 'active')} className="px-2 py-1 text-[10px] font-medium bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 transition-colors">Unblock</button>}
+
+                            <button onClick={() => handleCounselorAction(c, 'deleted')} className="px-2 py-1 text-[10px] font-medium bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors">Delete</button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                     {counselors.length === 0 && <div className="text-center p-8 text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-xl">No counselors yet.</div>}

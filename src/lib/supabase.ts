@@ -680,6 +680,26 @@ export async function fetchPlatformSettings(key: string): Promise<string | null>
   return data.value;
 }
 
+export async function updateUserStatusInDB(id: string, status: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('users').update({ status }).eq('id', id);
+  if (error) {
+    console.error('Error updating user status:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteUserFromDB(id: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('users').delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting user:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function updatePlatformSettings(key: string, value: string): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase.from('platform_settings').upsert({ key, value }, { onConflict: 'key' });

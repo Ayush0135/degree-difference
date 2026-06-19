@@ -87,6 +87,7 @@ export interface User {
   role: 'student' | 'admin' | 'counselor' | 'subadmin';
   phone?: string;
   avatar?: string;
+  status?: 'active' | 'suspended' | 'blocked';
 }
 
 export interface Counselor extends User {
