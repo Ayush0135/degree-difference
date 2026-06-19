@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, School, Users, FileText, MessageSquare, Edit, Trash2, X, Check,
   Database, UserPlus, BookOpen, Book, ArrowRight, Lock, RefreshCw, Megaphone,
   Save, Home, Award, Menu, ChevronRight, ClipboardList, ShieldCheck,
-  GraduationCap, TrendingUp, Zap, Bell
+  GraduationCap, TrendingUp, Zap, Bell, LogOut
 } from 'lucide-react';
 import { useCollegeStore } from '../store/collegeStore';
 import { useAdminStore } from '../store/adminStore';
 import { useAuthStore } from '../store/authStore';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import ApplicationChat from '../components/ApplicationChat';
+import { useClerk } from '@clerk/clerk-react';
 
 function StatusPill({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -187,7 +188,9 @@ const generateCounselorPDF = async (name: string, email: string, password: strin
 };
 
 export default function AdminDashboard() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { signOut } = useClerk();
   const {
     applications, queries, initializeData, updateApplicationStatus, advanceApplicationStep,
     assignCounselor, manuallyRegisterStudent, addCounselor, assignIncentive, counselors,
@@ -208,6 +211,14 @@ export default function AdminDashboard() {
   const [queryResponseText, setQueryResponseText] = useState('');
 
   useEffect(() => { setMarqueeOffer(storeMarquee); }, [storeMarquee]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch(e) {}
+    logout();
+    navigate('/');
+  };
 
   useEffect(() => {
     initializeColleges();
@@ -380,6 +391,9 @@ export default function AdminDashboard() {
             <p className="text-[10px] text-teal-200 capitalize">{user?.role}</p>
           </div>
           <div className={`ml-auto w-1.5 h-1.5 rounded-full shrink-0 ${dbConnected ? 'bg-teal-400' : 'bg-amber-400'}`} title={dbConnected ? 'Supabase connected' : 'Local mode'} />
+          <button onClick={handleLogout} className="ml-1 p-1.5 rounded-lg hover:bg-white/10 text-teal-100 hover:text-white transition-colors" title="Sign Out">
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, FileText, CheckCircle, TrendingUp, X, Award, MessageSquare,
   Upload, Plus, Clock, Camera, Save, Home, DollarSign, UserCircle,
   UserPlus, QrCode, ChevronRight, Menu, GraduationCap, Copy, Check,
-  AlertCircle, ArrowUpRight, Circle, Star, FolderHeart, Sparkles
+  AlertCircle, ArrowUpRight, Circle, Star, FolderHeart, Sparkles, LogOut
 } from 'lucide-react';
 import { useAdminStore } from '../store/adminStore';
 import { useCollegeStore } from '../store/collegeStore';
@@ -15,6 +15,7 @@ import {
   addCounselorTask, updateCounselorTask, deleteCounselorTask, uploadDocumentToDB,
   fetchCounselorBadges
 } from '../lib/supabase';
+import { useClerk } from '@clerk/clerk-react';
 import ApplicationChat from '../components/ApplicationChat';
 
 function StatusPill({ status }: { status: string }) {
@@ -66,7 +67,9 @@ export default function CounselorDashboard() {
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { user, updateUser } = useAuthStore();
+  const navigate = useNavigate();
+  const { signOut } = useClerk();
+  const { user, updateUser, logout } = useAuthStore();
   const counselorName = user?.name || 'Counselor';
   const counselorId = user?.id || 'counselor1';
 
@@ -210,6 +213,14 @@ export default function CounselorDashboard() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch(e) {}
+    logout();
+    navigate('/');
+  };
+
   const NAV = [
     { id: 'home' as View, icon: Home, label: 'Home' },
     { id: 'students' as View, icon: Users, label: 'Students' },
@@ -260,6 +271,10 @@ export default function CounselorDashboard() {
           <button onClick={() => setShowQR(true)}
             className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-lg hover:bg-teal-100 active:scale-95 transition-all">
             <QrCode className="h-3.5 w-3.5" /> QR
+          </button>
+          <button onClick={handleLogout} title="Sign Out"
+            className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors">
+            <LogOut className="h-4 w-4" />
           </button>
         </div>
       </header>

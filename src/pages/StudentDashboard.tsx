@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
-import { BookOpen, Heart, FileText, MessageSquare, TrendingUp, Clock, CheckCircle, GraduationCap, ArrowRight, Check } from 'lucide-react';
+import { BookOpen, Heart, FileText, MessageSquare, TrendingUp, Clock, CheckCircle, GraduationCap, ArrowRight, Check, LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useCollegeStore } from '../store/collegeStore';
 import { useStudentStore } from '../store/studentStore';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 import { useEffect, useRef, useState } from 'react';
 import { Upload, Award, ExternalLink } from 'lucide-react';
 import { mockScholarships } from '../data/mockData';
@@ -29,7 +30,9 @@ const APP_STAGES = [
 ];
 
 export default function StudentDashboard() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const { signOut } = useClerk();
   const { colleges, favorites } = useCollegeStore();
   const { applications, queries, initializeData, uploadDocument, isLoading } = useStudentStore();
   
@@ -66,12 +69,25 @@ export default function StudentDashboard() {
   
   const hasActivity = myApps.length > 0 || myQueries.length > 0 || favColleges.length > 0;
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch(e) {}
+    logout();
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Welcome back, {user?.name} 👋</h1>
-          <p className="text-slate-500 text-sm">Track your applications and explore new colleges</p>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-start justify-between sm:items-center">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Welcome back, {user?.name} 👋</h1>
+            <p className="text-slate-500 text-sm">Track your applications and explore new colleges</p>
+          </div>
+          <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm text-sm font-semibold">
+            <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign Out</span>
+          </button>
         </motion.div>
 
         {!hasActivity ? (
