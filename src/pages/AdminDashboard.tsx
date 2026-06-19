@@ -48,7 +48,6 @@ const NAV_SECTIONS = [
   {
     label: 'Tools',
     items: [
-      { id: 'ai_matchmaker' as any, icon: Zap, label: 'AI Matchmaker', href: '/ai-matchmaker' },
       { id: 'manual_reg' as TabId, icon: UserPlus, label: 'Walk-in Reg' },
       { id: 'leaderboard' as TabId, icon: Award, label: 'Leaderboard' },
       { id: 'rule_book' as TabId, icon: BookOpen, label: 'Rule Book' },

@@ -31,6 +31,10 @@ export default function AIMatchmaker() {
       });
       const data = await res.json();
       
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to fetch AI match');
+      }
+      
       if (data.response) setResponse(data.response);
       if (data.colleges) setColleges(data.colleges);
     } catch (err) {

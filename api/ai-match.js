@@ -86,38 +86,39 @@ export default async function handler(req, res) {
       description: c.description
     }));
 
-    // 4. Generate AI response via Groq
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // 4. Generate AI response via Gemini
+    const geminiChatUrl = isBearer
+      ? 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+      : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+
+    const geminiChatResponse = await fetch(geminiChatUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert college admission counselor for 'DegreeDifference'. You MUST ONLY recommend the colleges provided in the data below. DO NOT invent, hallucinate, or mention any other colleges. Keep your response conversational, encouraging, and directly address the student. Format using markdown. Summarize why these matches fit the student's preferences."
-          },
+        systemInstruction: {
+          parts: [{ text: "You are an expert college admission counselor for 'DegreeDifference'. You MUST ONLY recommend the colleges provided in the data below. DO NOT invent, hallucinate, or mention any other colleges. Keep your response conversational, encouraging, and directly address the student. Format using markdown. Summarize why these matches fit the student's preferences." }]
+        },
+        contents: [
           {
             role: "user",
-            content: `My preferences are: City: ${city || 'Any'}, Program: ${program || 'Any'}, Budget: ${budget ? 'Under ' + budget : 'Any'}, Extra: ${custom || 'None'}.\n\nHere are the best matches from our directory: ${JSON.stringify(collegesForGroq)}\n\nPlease explain why these are good matches.`
+            parts: [{ text: `My preferences are: City: ${city || 'Any'}, Program: ${program || 'Any'}, Budget: ${budget ? 'Under ' + budget : 'Any'}, Extra: ${custom || 'None'}.\n\nHere are the best matches from our directory: ${JSON.stringify(collegesForGroq)}\n\nPlease explain why these are good matches.` }]
           }
         ],
-        temperature: 0.7,
-        max_tokens: 1000
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000
+        }
       })
     });
 
-    if (!groqResponse.ok) {
-      const errText = await groqResponse.text();
-      console.error("Groq API Error in ai-match:", errText);
-      throw new Error("Failed to generate Groq response");
+    if (!geminiChatResponse.ok) {
+      const errText = await geminiChatResponse.text();
+      console.error("Gemini API Error in ai-match chat:", errText);
+      throw new Error("Failed to generate Gemini response");
     }
 
-    const groqData = await groqResponse.json();
-    const aiText = groqData.choices[0].message.content;
+    const geminiChatData = await geminiChatResponse.json();
+    const aiText = geminiChatData.candidates?.[0]?.content?.parts?.[0]?.text || "Here are some top recommendations based on your preferences!";
 
     res.status(200).json({ response: aiText, colleges: sortedColleges });
 
