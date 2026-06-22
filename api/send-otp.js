@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import crypto from 'crypto';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_fDU7oDNr_HJQWegTM6L7G3w9hKZJYXX5c');
 
@@ -7,11 +8,20 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, otp, name } = req.body;
+  const { email, name } = req.body;
 
-  if (!email || !otp || !name) {
-    return res.status(400).json({ error: 'Email, OTP, and Name are required.' });
+  if (!email || !name) {
+    return res.status(400).json({ error: 'Email and Name are required.' });
   }
+
+  // Generate 6-digit OTP securely
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Create HMAC hash for validation
+  const SECRET = process.env.OTP_SECRET || 'fallback_secret_for_development_degreedifference';
+  const expires = Date.now() + 5 * 60 * 1000; // 5 minutes expiration
+  const data = `${email}:${otp}:${expires}`;
+  const hash = crypto.createHmac('sha256', SECRET).update(data).digest('hex');
 
   try {
     const { data, error } = await resend.emails.send({
@@ -35,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: error.message });
     }
 
-    res.status(200).json({ success: true, data });
+    res.status(200).json({ success: true, hash: `${hash}.${expires}` });
   } catch (error) {
     console.error('Server Error:', error);
     res.status(500).json({ error: 'Failed to send OTP.' });

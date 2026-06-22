@@ -14,7 +14,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [otpHash, setOtpHash] = useState('');
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,28 +47,25 @@ export default function Login() {
     const cleanEmail = email.trim().toLowerCase();
     
     if (role === 'admin') {
-      if (cleanEmail !== 'ayush.kashyap7155@gmail.com') {
-        try {
-          const dbUser = await getUserByEmail(cleanEmail);
-          const isSubadminLocal = subadmins?.some(s => s.email === cleanEmail);
-          
-          if (!isSubadminLocal && (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'subadmin'))) {
-            setError('Unauthorized: You are not an authorized admin or subadmin.');
-            setIsLoading(false);
-            return;
-          }
-          
-          if (dbUser) {
-            // Set name to dbUser.name if they exist
-            setName(dbUser.name || email.split('@')[0]);
-          } else {
-            setName(email.split('@')[0]);
-          }
-        } catch (err) {
-          setError('Database error occurred while checking authorization.');
+      try {
+        const dbUser = await getUserByEmail(cleanEmail);
+        const isSubadminLocal = subadmins?.some(s => s.email === cleanEmail);
+        
+        if (!isSubadminLocal && (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'subadmin'))) {
+          setError('Unauthorized: You are not an authorized admin or subadmin.');
           setIsLoading(false);
           return;
         }
+        
+        if (dbUser) {
+          setName(dbUser.name || email.split('@')[0]);
+        } else {
+          setName(email.split('@')[0]);
+        }
+      } catch (err) {
+        setError('Database error occurred while checking authorization.');
+        setIsLoading(false);
+        return;
       }
     }
 
@@ -131,18 +128,13 @@ export default function Login() {
       setIsLoading(false);
       return;
     }
-
-    // Generate 6 digit OTP
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newOtp);
-
     try {
       const response = await fetch('/api/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, name: name || email.split('@')[0], otp: newOtp }),
+        body: JSON.stringify({ email: cleanEmail, name: name || cleanEmail.split('@')[0] }),
       });
 
       if (!response.ok) {
@@ -150,6 +142,8 @@ export default function Login() {
         throw new Error(data.error || 'Failed to send OTP');
       }
 
+      const data = await response.json();
+      setOtpHash(data.hash);
       setStep('otp');
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Is the backend server running?');
@@ -165,51 +159,48 @@ export default function Login() {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    if (otp === generatedOtp) {
-      try {
-        let dbUser = await getUserByEmail(cleanEmail);
-        
-        if (!dbUser) {
-          // Auto-register student if they don't exist
-          dbUser = await createUser({ name: name || cleanEmail.split('@')[0], email: cleanEmail, role: cleanEmail === 'ayush.kashyap7155@gmail.com' ? 'admin' : role });
-        }
-        
-        let user: UserType;
-        if (dbUser) {
-          user = { 
-            id: dbUser.id, 
-            name: dbUser.name, 
-            email: dbUser.email, 
-            role: dbUser.role as any,
-            phone: dbUser.phone,
-            avatar: dbUser.avatar
-          };
-        } else {
-          // Local fallback for offline testing
-          const isSubadmin = subadmins?.some(s => s.email === email);
-          user = {
-            id: `local-${Date.now()}`,
-            name: name || email.split('@')[0],
-            email,
-            role: email === 'ayush.kashyap7155@gmail.com' ? 'admin' : (isSubadmin ? 'subadmin' : role) as any
-          };
-        }
-        
-        login(user);
-        
-        // Restore User State from DB
-        const stateData = await fetchUserStateFromDB(user.id);
-        if (stateData && stateData.favorites) {
-          useCollegeStore.getState().setFavorites(stateData.favorites);
-        }
-        navigate((user.role === 'admin' || user.role === 'subadmin') ? '/admin' : user.role === 'counselor' ? '/counselor' : '/dashboard');
-      } catch (err: any) {
-        setError(err.message || 'Database error occurred.');
-      } finally {
-        setIsLoading(false);
+    try {
+      const verifyResponse = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, otp, hash: otpHash }),
+      });
+
+      if (!verifyResponse.ok) {
+        const data = await verifyResponse.json();
+        throw new Error(data.error || 'Invalid OTP');
       }
-    } else {
-      setError('Invalid OTP. Please try again.');
+
+      let dbUser = await getUserByEmail(cleanEmail);
+      
+      if (!dbUser) {
+        dbUser = await createUser({ name: name || cleanEmail.split('@')[0], email: cleanEmail, role });
+      }
+      
+      if (!dbUser) {
+        throw new Error('Failed to retrieve or create user profile.');
+      }
+
+      const user: UserType = { 
+        id: dbUser.id, 
+        name: dbUser.name, 
+        email: dbUser.email, 
+        role: dbUser.role as any,
+        phone: dbUser.phone,
+        avatar: dbUser.avatar
+      };
+      
+      login(user);
+      
+      const stateData = await fetchUserStateFromDB(user.id);
+      if (stateData && stateData.favorites) {
+        useCollegeStore.getState().setFavorites(stateData.favorites);
+      }
+      navigate((user.role === 'admin' || user.role === 'subadmin') ? '/admin' : user.role === 'counselor' ? '/counselor' : '/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Verification failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
